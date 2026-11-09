@@ -76,3 +76,4 @@ export default function WordOfTheWeekCard({ word }: WordOfTheWeekProps) {
     </div>
   );
 }
+

@@ -292,3 +292,4 @@ export default function Navbar({ currentUser }: NavbarProps) {
     </nav>
   );
 }
+
