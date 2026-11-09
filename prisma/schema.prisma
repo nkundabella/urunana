@@ -1,13 +1,409 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Get a free hosted Postgres database in seconds: `npx create-db`
-
 generator client {
   provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  output   = "../generated/prisma"
 }
 
 datasource db {
   provider = "postgresql"
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum AccountStatus {
+  ACTIVE
+  RESTRICTED
+  SUSPENDED
+  GHOST
+}
+
+enum ContentType {
+  ARTICLE
+  STORY
+  LANGUAGE_EXPLANATION
+  ORAL_TRADITION
+  PERSONAL_EXPERIENCE
+  INTERVIEW
+  EVENT_NOTICE
+  RESEARCH_PIECE
+  OPINION_INTERPRETATION
+}
+
+enum KnowledgeSourceType {
+  PERSONAL_EXPERIENCE
+  FAMILY_ORAL_TRADITION
+  COMMUNITY_PRACTICE
+  DOCUMENTED_HISTORY
+  RESEARCH_BASED
+  INTERVIEW_BASED
+  INTERPRETATION_OPINION
+}
+
+enum ContentLanguage {
+  KINYARWANDA
+  ENGLISH
+  FRENCH
+  MIXED
+}
+
+enum PublicationStatus {
+  DRAFT
+  PUBLISHED
+  UNPUBLISHED
+  REMOVED
+  AUTO_HIDDEN
+}
+
+enum CommentStatus {
+  VISIBLE
+  REMOVED_PLACEHOLDER
+}
+
+enum ReportReason {
+  THREATS_VIOLENCE
+  HATE_SPEECH
+  PRIVACY_VIOLATION
+  SPAM_MANIPULATION
+  IMPERSONATION
+  PLAGIARISM_IP
+  HARASSMENT
+  FABRICATED_INFO
+  OFF_TOPIC
+  OTHER
+}
+
+enum ReportStatus {
+  OPEN
+  REVIEWED
+  ACTIONED
+  DISMISSED
+}
+
+enum ModerationActionType {
+  DISMISS_AND_RESTORE
+  WARN_AUTHOR
+  REMOVE_CONTENT
+  RESTRICT_ACCOUNT
+  SUSPEND_ACCOUNT
+}
+
+enum RemovalRequestStatus {
+  PENDING
+  COMPLETED
+  REJECTED
+}
+
+enum NotificationType {
+  COMMENT
+  REPLY
+  FOLLOW
+  NEW_PUBLICATION
+  MODERATION_ACTION
+  SYSTEM
+}
+
+model User {
+  id                     String         @id @default(cuid())
+  username               String         @unique
+  displayName            String
+  bio                    String?
+  emailOrPhone           String?        @unique
+  passwordHash           String?
+  role                   UserRole       @default(USER)
+  isModerator            Boolean        @default(false)
+  preferredLanguage      String         @default("rw")
+  isFoundingContributor  Boolean        @default(false)
+  foundingJoinDate       DateTime?
+  accountStatus          AccountStatus  @default(ACTIVE)
+  statedAgeBand          String         @default("18+")
+  profilePhotoUrl        String?
+  areasOfInterest        String[]       @default([])
+  researchUseConsent     Boolean        @default(false)
+  communityRulesAccepted Boolean        @default(false)
+  communityRulesAcceptedAt DateTime?
+  createdAt              DateTime       @default(now())
+  updatedAt              DateTime       @updatedAt
+  deletedAt              DateTime?
+
+  publications           Publication[]
+  comments               Comment[]
+  bookmarks              Bookmark[]
+  following              Follow[]       @relation("UserFollowing")
+  followers              Follow[]       @relation("UserFollowers")
+  reportsFiled           Report[]       @relation("UserReports")
+  moderationActionsTaken ModerationActionLog[] @relation("ModeratorActions")
+  removalRequests        RemovalRequest[]
+  notifications          Notification[] @relation("UserNotifications")
+  triggeredNotifications Notification[] @relation("ActorNotifications")
+
+  @@index([role])
+  @@index([accountStatus])
+}
+
+model RemovalRequest {
+  id                  String               @id @default(cuid())
+  userId              String?
+  requesterIdentifier String
+  status              RemovalRequestStatus @default(PENDING)
+  notes               String?
+  requestedAt         DateTime             @default(now())
+  completedAt         DateTime?
+  completedById       String?
+
+  user                User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([status])
+}
+
+model TopicCategory {
+  id                 String         @id @default(cuid())
+  slug               String         @unique
+  nameRw             String
+  nameEn             String
+  nameFr             String
+  description        String?
+  isHealthOrMedicine Boolean        @default(false)
+  isArchived         Boolean        @default(false)
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+
+  publications       PublicationTopic[]
+
+  @@index([slug])
+  @@index([isArchived])
+}
+
+model Publication {
+  id                    String                @id @default(cuid())
+  title                 String
+  slug                  String                @unique
+  body                  String
+  summary               String?
+  authorId              String
+  contentType           ContentType
+  knowledgeSources      KnowledgeSourceType[]
+  contentLanguage       ContentLanguage       @default(KINYARWANDA)
+  sourceCitation        String?
+  hostingLicenseGranted Boolean               @default(true)
+  researchUseConsent    Boolean               @default(false)
+  status                PublicationStatus     @default(PUBLISHED)
+  autoHideReason        String?
+  images                String[]              @default([])
+  relatedVersionsNote   String?
+  publishedAt           DateTime?             @default(now())
+  isEdited              Boolean               @default(false)
+  lastEditedAt          DateTime?
+  isFeatured            Boolean               @default(false)
+  featuredAt            DateTime?
+  version               Int                   @default(1)
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+
+  author                User                  @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  categories            PublicationTopic[]
+  comments              Comment[]
+  bookmarks             Bookmark[]
+  reports               Report[]
+  translationsFrom      PublicationTranslation[] @relation("OriginalPublication")
+  translationsTo        PublicationTranslation[] @relation("TranslatedPublication")
+
+  @@index([status, publishedAt])
+  @@index([authorId])
+  @@index([contentLanguage])
+  @@index([contentType])
+  @@index([isFeatured])
+}
+
+model PublicationTopic {
+  publicationId String
+  categoryId    String
+
+  publication   Publication   @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+  category      TopicCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  @@id([publicationId, categoryId])
+  @@index([categoryId])
+  @@index([publicationId])
+}
+
+model PublicationTranslation {
+  id                     String          @id @default(cuid())
+  originalPublicationId   String
+  translatedPublicationId String
+  language               ContentLanguage
+  translatorNotes        String?
+  createdAt              DateTime        @default(now())
+
+  original               Publication     @relation("OriginalPublication", fields: [originalPublicationId], references: [id], onDelete: Cascade)
+  translation            Publication     @relation("TranslatedPublication", fields: [translatedPublicationId], references: [id], onDelete: Cascade)
+
+  @@unique([originalPublicationId, translatedPublicationId])
+}
+
+model Comment {
+  id                   String        @id @default(cuid())
+  publicationId        String
+  authorId             String
+  parentId             String?
+  body                 String
+  isAlternativeVersion Boolean       @default(false)
+  status               CommentStatus @default(VISIBLE)
+  isEdited             Boolean       @default(false)
+  lastEditedAt         DateTime?
+  createdAt            DateTime      @default(now())
+  updatedAt            DateTime      @updatedAt
+
+  publication          Publication   @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+  author               User          @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent               Comment?      @relation("CommentReplies", fields: [parentId], references: [id], onDelete: SetNull)
+  replies              Comment[]     @relation("CommentReplies")
+  reports              Report[]
+
+  @@index([publicationId, createdAt])
+  @@index([parentId])
+  @@index([authorId])
+}
+
+model Follow {
+  id          String   @id @default(cuid())
+  followerId  String
+  followingId String
+  createdAt   DateTime @default(now())
+
+  follower    User     @relation("UserFollowing", fields: [followerId], references: [id], onDelete: Cascade)
+  following   User     @relation("UserFollowers", fields: [followingId], references: [id], onDelete: Cascade)
+
+  @@unique([followerId, followingId])
+  @@index([followerId])
+  @@index([followingId])
+}
+
+model Bookmark {
+  id            String      @id @default(cuid())
+  userId        String
+  publicationId String
+  createdAt     DateTime    @default(now())
+
+  user          User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  publication   Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, publicationId])
+  @@index([userId])
+  @@index([publicationId])
+}
+
+model Report {
+  id              String       @id @default(cuid())
+  reporterId      String
+  publicationId   String?
+  commentId       String?
+  reason          ReportReason
+  details         String?
+  status          ReportStatus @default(OPEN)
+  autoHidden      Boolean      @default(false)
+  resolutionNotes String?
+  reviewedById    String?
+  reviewedAt      DateTime?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  reporter        User         @relation("UserReports", fields: [reporterId], references: [id], onDelete: Cascade)
+  publication     Publication? @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+  comment         Comment?     @relation(fields: [commentId], references: [id], onDelete: Cascade)
+
+  @@unique([reporterId, publicationId, reason])
+  @@unique([reporterId, commentId, reason])
+  @@index([status, createdAt])
+  @@index([publicationId])
+  @@index([commentId])
+  @@index([reason])
+}
+
+model ModerationActionLog {
+  id          String               @id @default(cuid())
+  actorId     String
+  targetType  String
+  targetId    String
+  actionTaken ModerationActionType
+  ruleCited   String
+  notes       String?
+  createdAt   DateTime             @default(now())
+
+  actor       User                 @relation("ModeratorActions", fields: [actorId], references: [id], onDelete: Cascade)
+
+  @@index([targetType, targetId])
+  @@index([actorId])
+  @@index([createdAt])
+}
+
+model WordOfTheWeek {
+  id                          String   @id @default(cuid())
+  word                        String
+  pronunciation               String?
+  explanationRw               String
+  explanationEn               String
+  explanationFr               String?
+  culturalContext             String?
+  exampleSentenceRw           String?
+  exampleSentenceTranslation String?
+  startDate                   DateTime
+  endDate                     DateTime
+  isActive                    Boolean  @default(true)
+  createdById                 String
+  createdAt                   DateTime @default(now())
+
+  @@index([isActive, startDate, endDate])
+}
+
+model FeaturedItem {
+  id          String    @id @default(cuid())
+  type        String    // "CONTRIBUTOR" | "PUBLICATION"
+  targetId    String
+  reason      String?
+  startDate   DateTime  @default(now())
+  endDate     DateTime?
+  isActive    Boolean   @default(true)
+  createdById String
+  createdAt   DateTime  @default(now())
+
+  @@index([isActive, type])
+}
+
+model SystemSetting {
+  key         String   @id
+  value       String
+  description String?
+  updatedAt   DateTime @updatedAt
+}
+
+model CommunityRule {
+  ruleCode      String   @id
+  titleRw       String
+  titleEn       String
+  titleFr       String
+  descriptionRw String
+  descriptionEn String
+  descriptionFr String
+  tier          Int      @default(1)
+  updatedAt     DateTime @updatedAt
+}
+
+model Notification {
+  id          String           @id @default(cuid())
+  userId      String
+  actorId     String?
+  type        NotificationType
+  title       String
+  message     String
+  entityType  String?
+  entityId    String?
+  isRead      Boolean          @default(false)
+  createdAt   DateTime         @default(now())
+
+  user        User             @relation("UserNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  actor       User?            @relation("ActorNotifications", fields: [actorId], references: [id], onDelete: SetNull)
+
+  @@index([userId, isRead, createdAt])
 }
