@@ -29,7 +29,10 @@ export default async function RootLayout({
 
   return (
     <html lang="rw" className="h-full">
-      <body className="min-h-full flex flex-col bg-[#fbfbf9] text-stone-900 antialiased font-sans">
+      <body
+        suppressHydrationWarning
+        className="min-h-full flex flex-col bg-[#fbfbf9] text-stone-900 antialiased font-sans"
+      >
         <Navbar currentUser={currentUser} unreadCount={unreadCount} />
         <main className="flex-1">{children}</main>
       </body>
