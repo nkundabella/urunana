@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   Sparkles,
+  Settings,
 } from "lucide-react";
 
 interface NavbarProps {
@@ -147,7 +148,15 @@ export default function Navbar({ currentUser }: NavbarProps) {
                         <BookMarked className="w-3.5 h-3.5 text-stone-500" />
                         <span>Ibyo Nabitse</span>
                       </Link>
-                      {(currentUser.role === "ADMIN" || currentUser.isModerator) && (
+                      <Link
+                        href="/settings"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="flex items-center space-x-2 px-3.5 py-1.5 hover:bg-stone-50"
+                      >
+                        <Settings className="w-3.5 h-3.5 text-stone-500" />
+                        <span>Igenamiterere (Settings)</span>
+                      </Link>
+                {(currentUser.role === "ADMIN" || currentUser.isModerator) && (
                         <Link
                           href="/admin"
                           onClick={() => setUserMenuOpen(false)}
@@ -246,6 +255,14 @@ export default function Navbar({ currentUser }: NavbarProps) {
                 <div className="px-3 text-xs text-stone-500">
                   Uheruka kwinjira nka <span className="font-semibold text-stone-900">{currentUser.displayName}</span>
                 </div>
+                <Link
+                  href="/settings"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center space-x-2 px-3 py-2 rounded-lg text-sm text-stone-700 hover:bg-stone-100"
+                >
+                  <Settings className="w-4 h-4 text-stone-500" />
+                  <span>Igenamiterere (Settings)</span>
+                </Link>
                 {(currentUser.role === "ADMIN" || currentUser.isModerator) && (
                   <Link
                     href="/admin"

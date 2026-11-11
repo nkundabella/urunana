@@ -88,6 +88,12 @@ export default function LoginPage() {
               <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider">
                 Ijambobanga (Password)
               </label>
+              <Link
+                href="/forgot-password"
+                className="text-[11px] font-medium text-emerald-800 hover:text-emerald-950 hover:underline"
+              >
+                Wibagiwe ijambobanga?
+              </Link>
             </div>
             <input
               type="password"

@@ -193,13 +193,24 @@ export async function acceptCommunityRulesAction() {
 }
 
 /**
- * FR-AUTH-7: Instant self-service account deletion converts account to Ghost Account.
+ * FR-AUTH-7 & FR-AUTH-8: Instant self-service account deletion converts account to Ghost Account.
  * Erases personal credentials and PII, disabling login, while preserving publications
  * and discussions for the collective cultural record.
+ * Optionally files an automatic content removal request (14-day SLA).
  */
-export async function deleteAccountToGhostAction() {
+export async function deleteAccountToGhostAction(alsoRemoveContent: boolean = false) {
   const user = await getCurrentUser();
   if (!user) return { error: "Unauthorized" };
+
+  if (alsoRemoveContent) {
+    await prisma.removalRequest.create({
+      data: {
+        userId: user.id,
+        requesterIdentifier: user.emailOrPhone || user.username,
+        notes: "Requested total permanent removal of all publications and comments during account deletion.",
+      },
+    });
+  }
 
   await prisma.user.update({
     where: { id: user.id },
@@ -218,6 +229,100 @@ export async function deleteAccountToGhostAction() {
   cookieStore.delete(SESSION_COOKIE_NAME);
   revalidatePath("/");
   return { success: true };
+}
+
+export async function updateAccountProfileAction(formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Unauthorized" };
+
+  const displayName = (formData.get("displayName") as string)?.trim();
+  const bio = (formData.get("bio") as string)?.trim() || null;
+  const preferredLanguage = (formData.get("preferredLanguage") as string) || user.preferredLanguage;
+  const researchUseConsent = formData.get("researchUseConsent") === "on" || formData.get("researchUseConsent") === "true";
+
+  if (!displayName || displayName.length < 2) {
+    return { error: "Amazina agomba kugira nibura inyuguti 2." };
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      displayName,
+      bio,
+      preferredLanguage,
+      researchUseConsent,
+    },
+  });
+
+  revalidatePath("/settings");
+  revalidatePath("/");
+  return { success: true };
+}
+
+export async function changePasswordAction(formData: FormData) {
+  const user = await getCurrentUser();
+  if (!user) return { error: "Unauthorized" };
+
+  const currentPassword = formData.get("currentPassword") as string;
+  const newPassword = formData.get("newPassword") as string;
+  const confirmPassword = formData.get("confirmPassword") as string;
+
+  if (!currentPassword || !newPassword) {
+    return { error: "Shyiramo ijambobanga rya none n'irishya." };
+  }
+
+  if (newPassword.length < 6) {
+    return { error: "Ijambobanga rishya rigomba kugira nibura inyuguti 6." };
+  }
+
+  if (newPassword !== confirmPassword) {
+    return { error: "Amagambobanga mashya ntabwo asa." };
+  }
+
+  // Fetch full user with passwordHash
+  const fullUser = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { passwordHash: true },
+  });
+
+  if (!fullUser?.passwordHash) {
+    return { error: "Konti yawe nta jambobanga ifite." };
+  }
+
+  const isMatch = await verifyPassword(currentPassword, fullUser.passwordHash);
+  if (!isMatch) {
+    return { error: "Ijambobanga rya none wanditse ntabwo ari ryo." };
+  }
+
+  const newHash = await hashPassword(newPassword);
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash: newHash },
+  });
+
+  return { success: true };
+}
+
+export async function requestPasswordResetAction(formData: FormData) {
+  const email = (formData.get("email") as string)?.trim().toLowerCase();
+  if (!email) {
+    return { error: "Shyiramo imeri yawe." };
+  }
+
+  const existing = await prisma.user.findFirst({
+    where: { emailOrPhone: email },
+  });
+
+  // For security, do not leak whether account exists or not
+  if (!existing) {
+    return { success: true, message: "Niba iyi meri iri muri sisitemu, ubutumwa bwo guhindura ijambobanga bwoherejwe." };
+  }
+
+  // In production, an email delivery service dispatches the token
+  console.log(`[PASSWORD RESET] Token request for user: ${existing.username} (${existing.emailOrPhone})`);
+
+  return { success: true, message: "Niba iyi meri iri muri sisitemu, ubutumwa bwo guhindura ijambobanga bwoherejwe." };
 }
 
 /**
