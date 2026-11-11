@@ -504,3 +504,37 @@ export async function submitReportAction(formData: FormData) {
   return { success: true, autoHidden: false, tier: 3 };
 }
 
+
+
+/**
+ * Gushima / Express Gratitude to Storyteller
+ * Quiet, warm appreciation without toxic social media ranking metrics.
+ */
+export async function appreciateStoryAction(publicationId: string) {
+  const user = await getCurrentUser();
+  if (!user) return { error: "You must be logged in to express appreciation." };
+
+  const pub = await prisma.publication.findUnique({
+    where: { id: publicationId },
+    select: { id: true, title: true, authorId: true },
+  });
+
+  if (!pub) return { error: "Publication not found." };
+
+  // Notify author if not self
+  if (pub.authorId !== user.id) {
+    await prisma.notification.create({
+      data: {
+        userId: pub.authorId,
+        actorId: user.id,
+        type: NotificationType.SYSTEM,
+        title: "Gushima Inkuru Yawe",
+        message: `${user.displayName} yashimiye inkuru wanditse: "${pub.title}".`,
+        entityType: "PUBLICATION",
+        entityId: pub.id,
+      },
+    });
+  }
+
+  return { success: true };
+}
