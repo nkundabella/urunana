@@ -55,8 +55,8 @@ export async function createPublicationAction(formData: FormData) {
     return { error: "Title must be between 5 and 150 characters (FR-PUB-12)." };
   }
 
-  if (!isDraft && (!body || body.length < 100 || body.length > 20000)) {
-    return { error: "Published body content must be between 100 and 20,000 characters (FR-PUB-12)." };
+  if (!isDraft && (!body || body.length < 5 || body.length > 20000)) {
+    return { error: "Published content must have at least 5 characters (supporting concise proverbs, riddles, and stories)." };
   }
 
   if (!contentType) {
@@ -151,8 +151,8 @@ export async function updatePublicationAction(id: string, currentVersion: number
   if (!title || title.length < 5 || title.length > 150) {
     return { error: "Title must be between 5 and 150 characters." };
   }
-  if (!body || body.length < 100) {
-    return { error: "Body content must be at least 100 characters." };
+  if (!body || body.length < 5) {
+    return { error: "Body content must be at least 5 characters." };
   }
 
   const updated = await prisma.publication.update({
