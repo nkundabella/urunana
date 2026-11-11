@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { createPublicationAction } from "@/app/actions/publications";
 import {
@@ -24,6 +24,12 @@ import {
   Compass,
   Scroll,
   ShieldAlert,
+  Image as ImageIcon,
+  Eye,
+  Edit3,
+  X,
+  Minus,
+  Check,
 } from "lucide-react";
 
 interface CategoryOption {
@@ -146,6 +152,143 @@ const MEMORY_PROMPTS = [
   },
 ];
 
+const CULTURAL_PHOTO_PRESETS = [
+  {
+    name: "Inyambo z'i Nyanza",
+    url: "https://images.unsplash.com/photo-1547471080-7cc2caa01a7e?q=80&w=1200&auto=format&fit=crop",
+    caption: "Inyambo z'i Nyanza mu ngoro y'umwami i Rukari",
+  },
+  {
+    name: "Imisozi y'u Rwanda",
+    url: "https://images.unsplash.com/photo-1578328819058-b69f3a3b0f6b?q=80&w=1200&auto=format&fit=crop",
+    caption: "Ikirere n'imisozi y'igihugu cy'imisozi igihumbi",
+  },
+  {
+    name: "Ibyatsi Gakondo",
+    url: "https://images.unsplash.com/photo-1509316975850-ff9c5deb0cd9?q=80&w=1200&auto=format&fit=crop",
+    caption: "Ibyatsi n'ibiti byifashishwa mu buvuzi gakondo",
+  },
+  {
+    name: "Ingoma n'Umurishyo",
+    url: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?q=80&w=1200&auto=format&fit=crop",
+    caption: "Ingoma gakondo n'umuco w'intore",
+  },
+];
+
+function inlineFormat(text: string): React.ReactNode {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (part.startsWith("**") && part.endsWith("**")) {
+          return <strong key={i}>{part.slice(2, -2)}</strong>;
+        }
+        if (part.startsWith("*") && part.endsWith("*")) {
+          return <em key={i}>{part.slice(1, -1)}</em>;
+        }
+        return part;
+      })}
+    </>
+  );
+}
+
+function renderEditorPreview(text: string): React.ReactNode {
+  const lines = text.split("\n");
+  const elements: React.ReactNode[] = [];
+  let isFirstParagraph = true;
+
+  let i = 0;
+  while (i < lines.length) {
+    const rawLine = lines[i];
+    const line = rawLine.trim();
+
+    const imageMatch = line.match(/^!\[(.*?)\]\((.*?)\)$/);
+    if (imageMatch) {
+      const rawAlt = imageMatch[1];
+      const src = imageMatch[2];
+      const parts = rawAlt.split("|").map((p) => p.trim());
+      const caption = parts[0];
+      const isWide = parts.some(
+        (p) => p === "wide" || p === "full" || p === "cinema"
+      );
+
+      elements.push(
+        <figure
+          key={i}
+          className={`my-6 ${isWide ? "-mx-2 sm:-mx-6" : ""}`}
+        >
+          <div className="overflow-hidden rounded-xl bg-stone-100 border border-stone-200">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={src}
+              alt={caption || "Ifoto"}
+              className="w-full h-auto object-cover max-h-[450px] mx-auto"
+            />
+          </div>
+          {caption && (
+            <figcaption className="text-center font-serif text-xs text-stone-500 italic mt-2 px-2">
+              {caption}
+            </figcaption>
+          )}
+        </figure>
+      );
+    } else if (line.startsWith("## ")) {
+      elements.push(
+        <h2 key={i} className="font-serif text-xl font-bold text-stone-900 mt-6 mb-2">
+          {line.slice(3)}
+        </h2>
+      );
+    } else if (line.startsWith("### ")) {
+      elements.push(
+        <h3 key={i} className="font-serif text-lg font-semibold text-stone-800 mt-4 mb-2">
+          {line.slice(4)}
+        </h3>
+      );
+    } else if (line.startsWith("> ")) {
+      elements.push(
+        <blockquote key={i} className="border-l-4 border-emerald-800 pl-4 py-1.5 my-4 italic text-stone-700 font-serif text-base bg-stone-50 rounded-r-lg">
+          {line.slice(2)}
+        </blockquote>
+      );
+    } else if (line === "---" || line === "***") {
+      elements.push(
+        <div key={i} className="flex items-center justify-center space-x-2 my-6 text-stone-300">
+          <span>❖</span>
+          <span>❖</span>
+          <span>❖</span>
+        </div>
+      );
+    } else if (line.startsWith("- ") || line.startsWith("* ")) {
+      elements.push(
+        <li key={i} className="ml-5 list-disc text-stone-800 my-1 font-serif">
+          {inlineFormat(line.slice(2))}
+        </li>
+      );
+    } else if (line === "") {
+      elements.push(<div key={i} className="h-3" />);
+    } else {
+      const isDropCap = isFirstParagraph;
+      if (isFirstParagraph) isFirstParagraph = false;
+
+      elements.push(
+        <p
+          key={i}
+          className={`text-stone-800 leading-relaxed mb-3 text-sm font-serif ${
+            isDropCap
+              ? "first-letter:float-left first-letter:text-3xl first-letter:font-bold first-letter:text-emerald-900 first-letter:mr-2 first-letter:leading-none"
+              : ""
+          }`}
+        >
+          {inlineFormat(rawLine)}
+        </p>
+      );
+    }
+    i++;
+  }
+
+  return <>{elements}</>;
+}
+
 export default function PublishForm({ categories }: PublishFormProps) {
   const router = useRouter();
 
@@ -192,8 +335,70 @@ export default function PublishForm({ categories }: PublishFormProps) {
     }
   }
 
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Substack-style image insertion & preview states
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
+  const [imageCaption, setImageCaption] = useState("");
+  const [imageLayout, setImageLayout] = useState<"standard" | "wide">("standard");
+  const [isPreviewMode, setIsPreviewMode] = useState(false);
+
+  function insertAtCursor(textToInsert: string) {
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setBody((prev) => prev + textToInsert);
+      return;
+    }
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const before = body.substring(0, start);
+    const after = body.substring(end);
+    setBody(before + textToInsert + after);
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(
+        start + textToInsert.length,
+        start + textToInsert.length
+      );
+    }, 50);
+  }
+
   function insertFormatting(prefix: string, suffix: string = "") {
-    setBody((prev) => `${prev}${prefix}Inyandiko${suffix}`);
+    const textarea = textareaRef.current;
+    if (!textarea) {
+      setBody((prev) => `${prev}${prefix}Inyandiko${suffix}`);
+      return;
+    }
+    const start = textarea.selectionStart;
+    const end = textarea.selectionEnd;
+    const selectedText = body.substring(start, end) || "Inyandiko";
+    const replacement = `${prefix}${selectedText}${suffix}`;
+    const before = body.substring(0, start);
+    const after = body.substring(end);
+    setBody(before + replacement + after);
+    setTimeout(() => {
+      textarea.focus();
+      textarea.setSelectionRange(
+        start + prefix.length,
+        start + prefix.length + selectedText.length
+      );
+    }, 50);
+  }
+
+  function handleInsertImage(e?: React.FormEvent) {
+    if (e) e.preventDefault();
+    if (!imageUrl.trim()) return;
+
+    const captionPart = imageCaption.trim() ? imageCaption.trim() : "Ifoto";
+    const layoutModifier = imageLayout === "wide" ? "|wide" : "";
+    const markdownImage = `\n\n![${captionPart}${layoutModifier}](${imageUrl.trim()})\n\n`;
+
+    insertAtCursor(markdownImage);
+    setImageUrl("");
+    setImageCaption("");
+    setImageLayout("standard");
+    setIsImageModalOpen(false);
   }
 
   // Check if any selected category is health-related (triggers FR-MOD-13 preview)
@@ -457,73 +662,266 @@ export default function PublishForm({ categories }: PublishFormProps) {
 
         {/* Story Body with Formatting Toolbar */}
         <div>
-          <div className="flex items-center justify-between mb-1.5">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-2">
             <label className="block text-xs font-semibold text-stone-700 uppercase tracking-wider">
               Imbata y&apos;Inyandiko (Story Content) *
             </label>
 
-            {/* Quick Formatting Toolbar */}
-            <div className="flex items-center space-x-1 bg-stone-100 rounded-lg p-1 border border-stone-200">
+            {/* Substack-style Formatting Toolbar */}
+            <div className="flex items-center flex-wrap gap-1 bg-stone-100 rounded-xl p-1 border border-stone-200">
               <button
                 type="button"
                 onClick={() => insertFormatting("**", "**")}
-                title="Bold"
-                className="p-1 text-stone-700 hover:bg-stone-200 rounded"
+                title="Bold (**nyandiko**)"
+                className="p-1.5 text-stone-700 hover:bg-stone-200 rounded-lg transition"
               >
                 <Bold className="w-3.5 h-3.5" />
               </button>
               <button
                 type="button"
                 onClick={() => insertFormatting("*", "*")}
-                title="Italic"
-                className="p-1 text-stone-700 hover:bg-stone-200 rounded"
+                title="Italic (*nyandiko*)"
+                className="p-1.5 text-stone-700 hover:bg-stone-200 rounded-lg transition"
               >
                 <Italic className="w-3.5 h-3.5" />
               </button>
               <button
                 type="button"
                 onClick={() => insertFormatting("\n## ", "\n")}
-                title="Heading"
-                className="p-1 text-stone-700 hover:bg-stone-200 rounded"
+                title="Heading (## Umutwe muto)"
+                className="p-1.5 text-stone-700 hover:bg-stone-200 rounded-lg transition"
               >
                 <Heading2 className="w-3.5 h-3.5" />
               </button>
               <button
                 type="button"
                 onClick={() => insertFormatting("\n> ", "\n")}
-                title="Quote"
-                className="p-1 text-stone-700 hover:bg-stone-200 rounded"
+                title="Quote (> Igitekerezo)"
+                className="p-1.5 text-stone-700 hover:bg-stone-200 rounded-lg transition"
               >
                 <Quote className="w-3.5 h-3.5" />
               </button>
               <button
                 type="button"
                 onClick={() => insertFormatting("\n- ", "\n")}
-                title="List"
-                className="p-1 text-stone-700 hover:bg-stone-200 rounded"
+                title="List (- Ingingo)"
+                className="p-1.5 text-stone-700 hover:bg-stone-200 rounded-lg transition"
               >
                 <List className="w-3.5 h-3.5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => insertAtCursor("\n\n---\n\n")}
+                title="Divider (---)"
+                className="p-1.5 text-stone-700 hover:bg-stone-200 rounded-lg transition"
+              >
+                <Minus className="w-3.5 h-3.5" />
+              </button>
+
+              <span className="w-px h-4 bg-stone-300 mx-0.5" />
+
+              {/* Substack Image Button */}
+              <button
+                type="button"
+                onClick={() => setIsImageModalOpen(true)}
+                className="flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-100 text-emerald-950 hover:bg-emerald-200 border border-emerald-300 transition"
+                title="Shyiramo ifoto n'ibisobanuro (Insert Inline Photo)"
+              >
+                <ImageIcon className="w-3.5 h-3.5 text-emerald-800" />
+                <span>Ongeramo Ifoto</span>
+              </button>
+
+              {/* Preview Toggle */}
+              <button
+                type="button"
+                onClick={() => setIsPreviewMode(!isPreviewMode)}
+                className={`flex items-center space-x-1 px-2.5 py-1 rounded-lg text-xs font-semibold transition ${
+                  isPreviewMode
+                    ? "bg-stone-900 text-white"
+                    : "bg-white border border-stone-300 text-stone-700 hover:bg-stone-50"
+                }`}
+                title="Reba uko inkuru izasomwa"
+              >
+                {isPreviewMode ? (
+                  <Edit3 className="w-3.5 h-3.5" />
+                ) : (
+                  <Eye className="w-3.5 h-3.5" />
+                )}
+                <span>{isPreviewMode ? "Andika (Edit)" : "Kureba (Preview)"}</span>
               </button>
             </div>
           </div>
 
-          <textarea
-            rows={12}
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            placeholder="Andika inkuru yawe hano... (Proverbs, riddles, or full oral accounts are all welcome without arbitrary length barriers)"
-            className="w-full p-4 rounded-xl border border-stone-300 font-serif text-sm text-stone-900 leading-relaxed placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-800 bg-[#fcfcfb]"
-          />
+          {/* Editor or Live Preview */}
+          {isPreviewMode ? (
+            <div className="p-6 rounded-2xl border border-stone-300 bg-[#fbfbf9] min-h-[300px] shadow-2xs">
+              <div className="flex items-center space-x-2 text-xs text-stone-400 pb-3 border-b border-stone-200 mb-4">
+                <Eye className="w-3.5 h-3.5 text-emerald-800" />
+                <span>Uko inyandiko izagaragara ku basomyi (Reader Preview):</span>
+              </div>
+              <div className="font-serif">
+                {body.trim() ? (
+                  renderEditorPreview(body)
+                ) : (
+                  <p className="text-xs text-stone-400 italic">
+                    Nta kintu kirandikwa muri iyi nyandiko...
+                  </p>
+                )}
+              </div>
+            </div>
+          ) : (
+            <textarea
+              ref={textareaRef}
+              rows={14}
+              value={body}
+              onChange={(e) => setBody(e.target.value)}
+              placeholder="Andika inkuru yawe hano... Ushobora gukoresha amashusho, ibisakuzo, imigani, cyangwa inkuru ndende z'amateka."
+              className="w-full p-4 rounded-xl border border-stone-300 font-serif text-sm text-stone-900 leading-relaxed placeholder-stone-400 focus:outline-none focus:ring-2 focus:ring-emerald-800 bg-[#fcfcfb]"
+            />
+          )}
 
           <div className="flex justify-between items-center text-[11px] text-stone-400 mt-1.5">
             <span>
               Amagambo: {body.trim() ? body.trim().split(/\s+/).length : 0} | Inyuguti: {body.length}
             </span>
             <span className="text-emerald-800 font-medium">
-              Urunana rushyigikiye imigani migufi n&apos;ibisakuzo kimwe n&apos;inkuru ndende.
+              💡 Ushobora gushyira amafoto aho ushaka hose mu nkuru ukoresheje buto ya &ldquo;Ongeramo Ifoto&rdquo;.
             </span>
           </div>
         </div>
+
+        {/* Substack Inline Image Modal */}
+        {isImageModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+            <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-stone-300 p-6 space-y-4">
+              <div className="flex items-center justify-between pb-3 border-b border-stone-200">
+                <div className="flex items-center space-x-2 text-emerald-800">
+                  <ImageIcon className="w-5 h-5" />
+                  <h3 className="font-serif font-bold text-base text-stone-900">
+                    Ongeramo Ifoto mu Nkuru (Insert Inline Photo)
+                  </h3>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsImageModalOpen(false)}
+                  className="p-1 rounded-full text-stone-400 hover:text-stone-700 hover:bg-stone-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              <form onSubmit={handleInsertImage} className="space-y-4">
+                <div>
+                  <label className="block text-xs font-semibold text-stone-800 uppercase tracking-wider mb-1">
+                    Ihuza ry&apos;Ifoto (Image URL) *
+                  </label>
+                  <input
+                    type="url"
+                    required
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    placeholder="https://urugero.com/ifoto.jpg cyangwa ihuza ryose"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-xs text-stone-900 bg-[#fcfcfb] focus:ring-2 focus:ring-emerald-800"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-stone-800 uppercase tracking-wider mb-1">
+                    Ibisobanuro & Inkomoko (Caption / Credit)
+                  </label>
+                  <input
+                    type="text"
+                    value={imageCaption}
+                    onChange={(e) => setImageCaption(e.target.value)}
+                    placeholder="urugero: Inyambo z'i Nyanza mu birori by'umuganura | Ifoto: Umurage Archive"
+                    className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-xs text-stone-900 bg-[#fcfcfb] focus:ring-2 focus:ring-emerald-800"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-semibold text-stone-800 uppercase tracking-wider mb-1">
+                    Uburyo bwo Kugaragara (Image Layout)
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <label
+                      className={`flex items-center space-x-2 p-2.5 rounded-xl border cursor-pointer transition text-xs ${
+                        imageLayout === "standard"
+                          ? "border-emerald-800 bg-emerald-50/70 text-emerald-950 font-semibold"
+                          : "border-stone-200 text-stone-700 hover:bg-stone-50"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="layout"
+                        value="standard"
+                        checked={imageLayout === "standard"}
+                        onChange={() => setImageLayout("standard")}
+                        className="text-emerald-800 focus:ring-emerald-800"
+                      />
+                      <span>Biringaniye (Standard Column)</span>
+                    </label>
+
+                    <label
+                      className={`flex items-center space-x-2 p-2.5 rounded-xl border cursor-pointer transition text-xs ${
+                        imageLayout === "wide"
+                          ? "border-emerald-800 bg-emerald-50/70 text-emerald-950 font-semibold"
+                          : "border-stone-200 text-stone-700 hover:bg-stone-50"
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="layout"
+                        value="wide"
+                        checked={imageLayout === "wide"}
+                        onChange={() => setImageLayout("wide")}
+                        className="text-emerald-800 focus:ring-emerald-800"
+                      />
+                      <span>Ubugari Bwose (Wide Cinematic)</span>
+                    </label>
+                  </div>
+                </div>
+
+                {/* Cultural Presets Helper */}
+                <div className="pt-2 border-t border-stone-100">
+                  <span className="text-[10px] font-bold text-stone-400 uppercase tracking-wider block mb-1.5">
+                    Amafoto y&apos;Icyitegererezo (Sample Cultural Imagery)
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {CULTURAL_PHOTO_PRESETS.map((preset) => (
+                      <button
+                        key={preset.name}
+                        type="button"
+                        onClick={() => {
+                          setImageUrl(preset.url);
+                          setImageCaption(preset.caption);
+                        }}
+                        className="px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-emerald-50 hover:text-emerald-900 text-stone-700 text-[11px] font-medium border border-stone-200 transition"
+                      >
+                        + {preset.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="pt-3 border-t border-stone-200 flex items-center justify-end space-x-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsImageModalOpen(false)}
+                    className="px-4 py-2 text-xs font-semibold text-stone-600 hover:bg-stone-100 rounded-xl"
+                  >
+                    Kureka
+                  </button>
+                  <button
+                    type="submit"
+                    className="px-5 py-2 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white text-xs font-semibold transition shadow-xs"
+                  >
+                    Ongeramo Ifoto mu Nkuru
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* SECTION 4: Topics & Citations */}

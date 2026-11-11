@@ -36,45 +36,112 @@ const KNOWLEDGE_SOURCE_LABELS: Record<KnowledgeSourceType, string> = {
   INTERPRETATION_OPINION: "Igitekerezo / Inyito",
 };
 
-/** Very basic markdown-like renderer — no external deps */
+/** Editorial Markdown Renderer supporting Substack-style inline images & literary formatting */
 function renderBody(text: string): React.ReactNode {
   const lines = text.split("\n");
   const elements: React.ReactNode[] = [];
+  let isFirstParagraph = true;
 
   let i = 0;
   while (i < lines.length) {
-    const line = lines[i];
+    const rawLine = lines[i];
+    const line = rawLine.trim();
 
-    if (line.startsWith("## ")) {
+    // 1. Substack-style image: ![Caption | wide/full](https://...)
+    const imageMatch = line.match(/^!\[(.*?)\]\((.*?)\)$/);
+    if (imageMatch) {
+      const rawAlt = imageMatch[1];
+      const src = imageMatch[2];
+      const parts = rawAlt.split("|").map((p) => p.trim());
+      const caption = parts[0];
+      const isWide = parts.some(
+        (p) => p === "wide" || p === "full" || p === "cinema"
+      );
+
       elements.push(
-        <h2 key={i} className="font-serif text-2xl font-bold text-stone-900 mt-8 mb-3">
+        <figure
+          key={i}
+          className={`my-8 transition-all ${
+            isWide ? "-mx-4 sm:-mx-8 md:-mx-16" : ""
+          }`}
+        >
+          <div className="overflow-hidden rounded-2xl bg-stone-100 border border-stone-200/90 shadow-xs">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={src}
+              alt={caption || "Ifoto yo mu nkuru"}
+              className="w-full h-auto object-cover max-h-[600px] mx-auto transition duration-300 hover:scale-[1.01]"
+              loading="lazy"
+            />
+          </div>
+          {caption && (
+            <figcaption className="text-center font-serif text-xs text-stone-500 italic mt-2.5 px-4 leading-normal">
+              {caption}
+            </figcaption>
+          )}
+        </figure>
+      );
+    } else if (line.startsWith("## ")) {
+      elements.push(
+        <h2
+          key={i}
+          className="font-serif text-2xl sm:text-3xl font-bold text-stone-900 mt-10 mb-4 tracking-tight"
+        >
           {line.slice(3)}
         </h2>
       );
     } else if (line.startsWith("### ")) {
       elements.push(
-        <h3 key={i} className="font-serif text-xl font-semibold text-stone-800 mt-6 mb-2">
+        <h3
+          key={i}
+          className="font-serif text-xl sm:text-2xl font-semibold text-stone-800 mt-8 mb-3"
+        >
           {line.slice(4)}
         </h3>
       );
     } else if (line.startsWith("> ")) {
       elements.push(
-        <blockquote key={i} className="border-l-4 border-emerald-700 pl-5 py-1 my-4 italic text-stone-700 font-serif text-lg">
+        <blockquote
+          key={i}
+          className="border-l-4 border-emerald-800 pl-6 py-2 my-6 italic text-stone-700 font-serif text-lg leading-relaxed bg-stone-50/60 rounded-r-xl"
+        >
           {line.slice(2)}
         </blockquote>
       );
+    } else if (line === "---" || line === "***") {
+      // Subtle literary section break
+      elements.push(
+        <div
+          key={i}
+          className="flex items-center justify-center space-x-3 my-8 text-stone-300 font-serif text-sm tracking-widest"
+        >
+          <span>❖</span>
+          <span>❖</span>
+          <span>❖</span>
+        </div>
+      );
     } else if (line.startsWith("- ") || line.startsWith("* ")) {
       elements.push(
-        <li key={i} className="ml-5 list-disc text-stone-800 my-1">
+        <li key={i} className="ml-5 list-disc text-stone-800 my-1 font-serif">
           {inlineFormat(line.slice(2))}
         </li>
       );
-    } else if (line.trim() === "") {
+    } else if (line === "") {
       elements.push(<div key={i} className="h-4" />);
     } else {
+      const isDropCap = isFirstParagraph;
+      if (isFirstParagraph) isFirstParagraph = false;
+
       elements.push(
-        <p key={i} className="text-stone-800 leading-relaxed mb-0">
-          {inlineFormat(line)}
+        <p
+          key={i}
+          className={`text-stone-800 leading-relaxed mb-4 text-[1.08rem] font-serif ${
+            isDropCap
+              ? "first-letter:float-left first-letter:text-5xl first-letter:font-bold first-letter:text-emerald-900 first-letter:mr-3 first-letter:leading-none first-letter:font-serif"
+              : ""
+          }`}
+        >
+          {inlineFormat(rawLine)}
         </p>
       );
     }

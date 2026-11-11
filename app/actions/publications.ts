@@ -73,6 +73,14 @@ export async function createPublicationAction(formData: FormData) {
 
   const slug = slugify(title);
 
+  // Extract inline image URLs from markdown for the publication images array
+  const imageRegex = /!\[.*?\]\((.*?)\)/g;
+  const extractedImages: string[] = [];
+  let imgMatch;
+  while ((imgMatch = imageRegex.exec(body || "")) !== null) {
+    if (imgMatch[1]) extractedImages.push(imgMatch[1].trim());
+  }
+
   const publication = await prisma.publication.create({
     data: {
       title,
@@ -84,6 +92,7 @@ export async function createPublicationAction(formData: FormData) {
       knowledgeSources: knowledgeSourcesRaw,
       contentLanguage,
       sourceCitation,
+      images: extractedImages,
       hostingLicenseGranted: true,
       researchUseConsent: researchConsent,
       status: isDraft ? PublicationStatus.DRAFT : PublicationStatus.PUBLISHED,
@@ -155,6 +164,13 @@ export async function updatePublicationAction(id: string, currentVersion: number
     return { error: "Body content must be at least 5 characters." };
   }
 
+  const imageRegex = /!\[.*?\]\((.*?)\)/g;
+  const extractedImages: string[] = [];
+  let imgMatch;
+  while ((imgMatch = imageRegex.exec(body || "")) !== null) {
+    if (imgMatch[1]) extractedImages.push(imgMatch[1].trim());
+  }
+
   const updated = await prisma.publication.update({
     where: { id },
     data: {
@@ -165,6 +181,7 @@ export async function updatePublicationAction(id: string, currentVersion: number
       contentLanguage,
       knowledgeSources: knowledgeSourcesRaw,
       sourceCitation,
+      images: extractedImages,
       isEdited: true,
       lastEditedAt: new Date(),
       version: { increment: 1 },
