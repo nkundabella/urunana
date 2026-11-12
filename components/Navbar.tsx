@@ -44,7 +44,7 @@ export default function Navbar({ currentUser, unreadCount = 0 }: NavbarProps) {
   ];
 
   return (
-    <nav className="sticky top-0 z-40 bg-[#fbfbf9]/95 backdrop-blur-md border-b border-stone-200/80">
+    <nav className="sticky top-0 z-40 bg-bgLight/95 backdrop-blur-md border-b border-stone-200/80">
       <div className="max-w-6xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between h-16">
           {/* Brand */}

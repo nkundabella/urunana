@@ -31,10 +31,15 @@ export default async function RootLayout({
     <html lang="rw" className="h-full">
       <body
         suppressHydrationWarning
-        className="min-h-full flex flex-col bg-[#fbfbf9] text-stone-900 antialiased font-sans"
+        className="min-h-full flex flex-col bg-bgLight text-textPrimary antialiased font-sans"
       >
         <Navbar currentUser={currentUser} unreadCount={unreadCount} />
-        <main className="flex-1">{children}</main>
+        <main className="flex-1 container py-6">
+          {children}
+        </main>
+        <footer className="py-4 text-center text-sm text-textMuted">
+          © {new Date().getFullYear()} Urunana. All rights reserved.
+        </footer>
       </body>
     </html>
   );
