@@ -29,8 +29,9 @@ body {
 
 /* Card component */
 .card {
-  @apply bg-bgDark rounded-xl shadow-sm p-4 sm:p-6 transition-colors hover:bg-bgDark/90;
+  @apply bg-gray-100 rounded-xl shadow-sm p-4 sm:p-6 transition-colors hover:bg-gray-200;
 }
+
 
 /* Drop‑cap for first paragraph (fallback) */
 .drop-cap:first-letter {
@@ -58,8 +59,9 @@ body {
   @apply border-gray-300 shadow-md;
 }
 
-/* Responsive helper classes */
-@layer utilities {
-  .mobile-only { @apply block lg:hidden; }
-  .desktop-only { @apply hidden lg:block; }
+/* Background pattern for authentic Rwandan feel */
+.bg-pattern {
+  background-image: url('/patterns/rwanda-pattern.png');
+  background-repeat: repeat;
+  background-size: 200px 200px;
 }
