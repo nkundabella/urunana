@@ -1,46 +1,35 @@
 import type { Metadata } from "next";
+import { Fraunces, DM_Sans } from "next/font/google";
 import "./globals.css";
-import Navbar from "@/components/Navbar";
-import { getCurrentUser } from "@/lib/auth";
-import { prisma } from "@/lib/prisma";
+
+const fraunces = Fraunces({
+  subsets: ["latin"],
+  variable: "--font-fraunces",
+  weight: ["400", "500", "700", "800", "900"],
+  display: "swap",
+});
+
+const dmSans = DM_Sans({
+  subsets: ["latin"],
+  variable: "--font-dm-sans",
+  weight: ["400", "500", "700"],
+  display: "swap",
+});
 
 export const metadata: Metadata = {
-  title: "Urunana — Ihuriro ry'Umuco, Ururimi, n'Umurage w'u Rwanda",
+  title: "Urunana — Umuco n'Ururimi",
   description:
-    "A community-driven digital platform for Rwandan culture, language, oral traditions, and heritage.",
+    "Ihuriro ry'umuco, ururimi, inkuru n'umurage w'Abanyarwanda.",
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
-  const currentUser = await getCurrentUser();
-
-  let unreadCount = 0;
-  if (currentUser) {
-    unreadCount = await prisma.notification.count({
-      where: {
-        userId: currentUser.id,
-        isRead: false,
-      },
-    });
-  }
-
   return (
-    <html lang="rw" className="h-full">
-      <body
-        suppressHydrationWarning
-        className="min-h-full flex flex-col bg-bgLight text-textPrimary antialiased font-sans"
-      >
-        <Navbar currentUser={currentUser} unreadCount={unreadCount} />
-        <main className="flex-1 container py-6">
-          {children}
-        </main>
-        <footer className="py-4 text-center text-sm text-textMuted">
-          © {new Date().getFullYear()} Urunana. All rights reserved.
-        </footer>
-      </body>
+    <html lang="rw" className={`${fraunces.variable} ${dmSans.variable}`}>
+      <body suppressHydrationWarning>{children}</body>
     </html>
   );
 }

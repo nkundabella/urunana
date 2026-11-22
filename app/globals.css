@@ -1,67 +1,44 @@
 @import "tailwindcss";
+@import "../src/styles/tokens.css";
 
-:root {
-  --background: #fbfbf9;
-  --foreground: #1c1917;
-  --primary-rw: #065f46;
-  --secondary-rw: #92400e;
-  --accent-gold: #d97706;
-}
-
-body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-}
-
-/* Reset & utilities */
-* {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
 }
 
-/* Tailwind base (already imported above) */
-
-/* Global layout helpers */
-.container {
-  @apply mx-auto w-full max-w-5xl px-4 sm:px-6 lg:px-8;
+html {
+  -webkit-text-size-adjust: 100%;
 }
 
-/* Card component */
-.card {
-  @apply bg-gray-100 rounded-xl shadow-sm p-4 sm:p-6 transition-colors hover:bg-gray-200;
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
 }
 
-
-/* Drop‑cap for first paragraph (fallback) */
-.drop-cap:first-letter {
-  @apply float-left mr-2 text-4xl font-bold leading-none;
+body {
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overflow-x: hidden;
 }
 
-/* Image variants used by markdown renderer */
-.img-wide {
-  @apply w-full max-w-none my-6;
-}
-.img-regular {
-  @apply max-w-4xl mx-auto my-4;
+img {
+  max-width: 100%;
+  display: block;
 }
 
-/* Existing custom utilities */
-.urunana-gradient {
-  background: linear-gradient(135deg, #065f46 0%, #047857 50%, #92400e 100%);
+button,
+input,
+textarea,
+select {
+  font: inherit;
 }
 
-.urunana-card {
-  @apply bg-white border border-gray-200 rounded-lg shadow-sm transition-all duration-200;
-}
-
-.urunana-card:hover {
-  @apply border-gray-300 shadow-md;
-}
-
-/* Background pattern for authentic Rwandan feel */
-.bg-pattern {
-  background-image: url('/patterns/rwanda-pattern.png');
-  background-repeat: repeat;
-  background-size: 200px 200px;
+a {
+  color: inherit;
 }

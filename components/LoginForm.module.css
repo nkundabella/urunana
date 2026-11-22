@@ -1,0 +1,97 @@
+.wrap {
+  width: 100%;
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: var(--text-eyebrow);
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--maroon);
+}
+
+.title {
+  margin: 0.85rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: var(--text-h1-auth);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  max-width: 9.6em;
+}
+
+.lead {
+  margin: 1.15rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: var(--text-lead-auth);
+  line-height: 1.35;
+  color: var(--gray);
+  max-width: 28rem;
+}
+
+.form {
+  margin-top: clamp(1.75rem, 3vw, 2.35rem);
+  display: flex;
+  flex-direction: column;
+  gap: 1.15rem;
+}
+
+.forgot {
+  align-self: flex-start;
+  margin-top: -0.15rem;
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  color: var(--maroon);
+  text-decoration: none;
+}
+
+.forgot:hover {
+  text-decoration: underline;
+}
+
+.submit {
+  margin-top: 0.35rem;
+  width: 100%;
+  height: var(--btn-auth-h);
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--maroon);
+  color: var(--cream);
+  font-family: var(--font-body);
+  font-size: 1.0625rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: var(--shadow-pill);
+  transition: transform 0.12s ease, opacity 0.12s ease;
+}
+
+.submit:hover {
+  opacity: 0.95;
+}
+
+.submit:active {
+  transform: scale(0.99);
+}
+
+.signup {
+  margin: 1.35rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 400;
+  color: var(--gray);
+}
+
+.signup a {
+  font-weight: 700;
+  color: var(--maroon);
+  text-decoration: none;
+}
+
+.signup a:hover {
+  text-decoration: underline;
+}
