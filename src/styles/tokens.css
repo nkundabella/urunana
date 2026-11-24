@@ -23,15 +23,16 @@
 
   /* Type @1440 — use clamp for fluid scaling */
   --text-h1: clamp(2.5rem, 5vw, 4.5rem); /* ~72px */
-  --text-h1-auth: clamp(2.75rem, 5.3vw, 4.75rem); /* ~76px login */
+  --text-h1-auth: clamp(2.15rem, 5.4vh, 4.75rem); /* ~76px when the screen is tall */
   --text-h2: clamp(1.75rem, 2.8vw, 2.5rem); /* ~40px */
   --text-h3: clamp(1.35rem, 2.1vw, 1.875rem); /* ~30px */
   --text-lead: clamp(1.125rem, 1.7vw, 1.5rem); /* ~24px */
-  --text-lead-auth: clamp(1.125rem, 1.8vw, 1.625rem); /* ~26px */
+  --text-lead-auth: clamp(1rem, 2.1vh, 1.625rem); /* ~26px */
   --text-body: clamp(1rem, 1.2vw, 1.125rem); /* 17–18px */
   --text-eyebrow: 0.75rem; /* 12px */
-  --text-caption-title: clamp(1.75rem, 3.3vw, 3rem); /* ~48px */
-  --text-caption-sub: clamp(1rem, 1.4vw, 1.25rem); /* ~20px */
+  --text-caption-title: clamp(1.35rem, 3.4vh, 3rem); /* ~48px */
+  --text-caption-display: clamp(1.55rem, 3.8vh, 3.25rem); /* ~52px */
+  --text-caption-sub: clamp(0.9rem, 1.7vh, 1.25rem); /* ~20px */
 
   /* Radii */
   --radius-pill: 999px;
@@ -53,9 +54,9 @@
   --woven-h: 10px;
   --zigzag-h: 1.75rem; /* ~28px */
   --split-min-h: 640px;
-  --input-h: 3.5rem; /* 56px */
+  --input-h: clamp(2.45rem, 4.6vh, 3.5rem); /* up to 56px */
   --pill-h: clamp(2.875rem, 3.5vw, 3.5rem); /* 46–56px */
-  --btn-auth-h: 3.875rem; /* 62px */
+  --btn-auth-h: clamp(2.6rem, 5vh, 3.875rem); /* up to 62px */
 
   /* Breakpoint */
   --bp-stack: 900px;

@@ -13,7 +13,7 @@
 }
 
 .title {
-  margin: 0.85rem 0 0;
+  margin: clamp(0.4rem, 1vh, 0.75rem) 0 0;
   font-family: var(--font-display);
   font-weight: 800;
   font-size: var(--text-h1-auth);
@@ -24,7 +24,7 @@
 }
 
 .lead {
-  margin: 1.15rem 0 0;
+  margin: clamp(0.45rem, 1.1vh, 0.85rem) 0 0;
   font-family: var(--font-display);
   font-weight: 400;
   font-size: var(--text-lead-auth);
@@ -34,10 +34,10 @@
 }
 
 .form {
-  margin-top: clamp(1.75rem, 3vw, 2.35rem);
+  margin-top: clamp(0.75rem, 1.8vh, 1.5rem);
   display: flex;
   flex-direction: column;
-  gap: 1.15rem;
+  gap: clamp(0.5rem, 1.15vh, 0.9rem);
 }
 
 .forgot {
@@ -79,7 +79,7 @@
 }
 
 .signup {
-  margin: 1.35rem 0 0;
+  margin: clamp(0.6rem, 1.3vh, 1rem) 0 0;
   font-family: var(--font-body);
   font-size: 0.9375rem;
   font-weight: 400;

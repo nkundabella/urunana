@@ -8,7 +8,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 2rem;
-  padding: clamp(2.25rem, 3.4vw, 3rem) var(--pad-inline);
+  padding: clamp(0.9rem, 1.8vh, 1.75rem) var(--pad-inline);
 }
 
 .brand {

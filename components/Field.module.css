@@ -1,7 +1,7 @@
 .field {
   display: flex;
   flex-direction: column;
-  gap: 0.55rem;
+  gap: clamp(0.25rem, 0.55vh, 0.45rem);
 }
 
 .label {

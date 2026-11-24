@@ -17,12 +17,12 @@ export function getSession(): DemoSession | null {
   }
 }
 
-export function setSession(identifier: string): DemoSession {
+export function setSession(identifier: string, displayName?: string): DemoSession {
   const session: DemoSession = {
     identifier,
-    displayName: identifier.includes("@")
-      ? identifier.split("@")[0]
-      : identifier,
+    displayName:
+      displayName?.trim() ||
+      (identifier.includes("@") ? identifier.split("@")[0] : identifier),
     loggedInAt: new Date().toISOString(),
   };
   localStorage.setItem(SESSION_KEY, JSON.stringify(session));
@@ -36,4 +36,19 @@ export function clearSession(): void {
 
 export function isLoggedIn(): boolean {
   return getSession() !== null;
+}
+
+export type UiLanguage = "rw" | "en" | "fr";
+
+const LANG_KEY = "urunana_ui_lang";
+
+export function getUiLanguage(): UiLanguage {
+  if (typeof window === "undefined") return "rw";
+  const raw = localStorage.getItem(LANG_KEY);
+  if (raw === "en" || raw === "fr" || raw === "rw") return raw;
+  return "rw";
+}
+
+export function setUiLanguage(lang: UiLanguage): void {
+  localStorage.setItem(LANG_KEY, lang);
 }

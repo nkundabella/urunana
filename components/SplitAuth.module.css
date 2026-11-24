@@ -5,13 +5,19 @@
   width: 100%;
 }
 
+.fit {
+  min-height: 0;
+  height: 100%;
+}
+
 .formPane {
   background: var(--cream);
   display: flex;
   align-items: center;
   justify-content: center;
-  /* ~60px vertical; horizontal 8.5% ⇒ content ≈ 83% of pane */
-  padding: clamp(2.5rem, 4.2vw, 3.75rem) 8.5%;
+  min-height: 0;
+  /* horizontal 8.5% ⇒ content ≈ 83% of pane */
+  padding: clamp(0.75rem, 2vh, 2.5rem) 8.5%;
 }
 
 .formPane > * {
@@ -34,6 +40,11 @@
   object-position: center;
 }
 
+.imageContain {
+  object-fit: contain;
+  object-position: center center;
+}
+
 .caption {
   position: absolute;
   left: clamp(1.25rem, 3vw, 2rem);
@@ -42,7 +53,7 @@
   box-sizing: border-box;
   background: rgba(11, 7, 5, 0.8);
   border-radius: var(--radius-caption);
-  padding: 2.75rem; /* 44px */
+  padding: clamp(1.15rem, 2.6vh, 2.75rem);
   z-index: 1;
 }
 
@@ -64,6 +75,46 @@
   font-weight: 400;
   line-height: 1.45;
   color: var(--cream);
+}
+
+.cluster {
+  position: absolute;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.clusterTop {
+  top: 0;
+  left: 0;
+  width: 42%;
+  height: 34%;
+  object-position: 18% 78%;
+}
+
+.clusterBottom {
+  right: 0;
+  bottom: 0;
+  width: 58%;
+  height: 46%;
+  object-position: 72% 28%;
+}
+
+.captionEyebrow {
+  margin: 0 0 0.85rem;
+  font-family: var(--font-body);
+  font-size: var(--text-eyebrow);
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--orange);
+}
+
+.captionWrap .captionTitle {
+  white-space: normal;
+  font-weight: 900;
+  font-size: var(--text-caption-display);
+  line-height: 1.02;
+  max-width: 16ch;
 }
 
 .imageLeft {
