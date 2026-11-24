@@ -8,6 +8,7 @@
   --paper: #fdf8ec;
   --line: #e3d2b4;
   --maroon: #5e0a1a;
+  --maroon-asset: #5f031a;
   --orange: #f28a35;
   --navy: #1f2f5f;
   --red: #b5261e;
@@ -49,9 +50,9 @@
   --container-wide: min(87%, 1250px);
   --container-narrow: min(60%, 870px);
   --pad-inline: 3.6%;
-  --header-h: 4.375rem; /* ~70px */
-  --header-pill-h: 2.5rem; /* ~40px, fits 70px header */
-  --woven-h: 10px;
+  --header-h: 3.5rem; /* ~56px */
+  --header-pill-h: 2.125rem; /* ~34px, fits 56px header */
+  --woven-h: 7px;
   --zigzag-h: 1.75rem; /* ~28px */
   --split-min-h: 640px;
   --input-h: clamp(2.45rem, 4.6vh, 3.5rem); /* up to 56px */

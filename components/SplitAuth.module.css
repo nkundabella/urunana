@@ -31,6 +31,10 @@
   background: var(--maroon);
 }
 
+.imagePaneClusters {
+  background: var(--maroon-asset);
+}
+
 .image {
   position: absolute;
   inset: 0;
@@ -79,24 +83,42 @@
 
 .cluster {
   position: absolute;
-  object-fit: cover;
+  overflow: hidden;
   pointer-events: none;
 }
 
 .clusterTop {
   top: 0;
   left: 0;
-  width: 42%;
-  height: 34%;
-  object-position: 18% 78%;
+  width: 40%;
+  height: 55%;
+}
+
+.clusterTopImg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 250%;
+  max-width: none;
+  height: auto;
+  transform: translateY(-14.5%);
 }
 
 .clusterBottom {
   right: 0;
   bottom: 0;
-  width: 58%;
-  height: 46%;
-  object-position: 72% 28%;
+  width: 52%;
+  height: 85%;
+}
+
+.clusterBottomImg {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 192.31%;
+  max-width: none;
+  height: auto;
+  transform: translateY(13.5%);
 }
 
 .captionEyebrow {
@@ -119,6 +141,14 @@
 
 .imageLeft {
   /* same grid; children order handles flip */
+}
+
+.portraitSplit {
+  grid-template-columns: minmax(0, min(50%, 66dvh)) 1fr;
+}
+
+.portraitSplit .formPane > * {
+  max-width: 34rem;
 }
 
 @media (max-width: 900px) {

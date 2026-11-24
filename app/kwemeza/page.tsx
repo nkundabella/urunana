@@ -19,7 +19,7 @@ export default function KwemezaPage() {
         <SplitAuth
           fit
           imageSide="left"
-          imageLayout="contain"
+          imageLayout="clusters"
           imageSrc="/assets/maroon-baskets.jpg"
           imageAlt="Agaseke gatukura — ubukoranyi bwa Rwanda"
           caption={{
