@@ -16,6 +16,10 @@
   min-height: var(--header-h);
 }
 
+.innerA {
+  grid-template-columns: auto 1fr auto;
+}
+
 .brand {
   display: flex;
   flex-direction: column;

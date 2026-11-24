@@ -16,7 +16,7 @@ const NAV = [
 export default function Header({ variant = "C" }: Props) {
   return (
     <header className={styles.header}>
-      <div className={styles.inner}>
+      <div className={`${styles.inner}${variant === "A" ? ` ${styles.innerA}` : ""}`}>
         <Link href="/ahabanza" className={styles.brand}>
           <span className={styles.logo}>Urunana</span>
           <span className={styles.tagline}>UMUCO N&apos;URURIMI</span>
