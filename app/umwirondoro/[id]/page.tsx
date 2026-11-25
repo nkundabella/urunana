@@ -5,10 +5,13 @@ import ProfileView, { type ProfileData } from "@/components/ProfileView";
 import profilesData from "@/src/data/profiles.json";
 import storiesData from "@/src/data/stories.json";
 import type { StoryItem } from "@/components/StoryCard";
+import { filterVisiblePosts, type PostStatus } from "@/lib/store";
 import styles from "./profile.module.css";
 
 type StoryRecord = StoryItem & {
   saved?: boolean;
+  status?: PostStatus;
+  authorId?: string;
 };
 
 type Props = {
@@ -42,11 +45,14 @@ export default async function ProfilePage({ params }: Props) {
     following: null,
   };
 
-  const authoredAll = stories.filter((s) => s.author === profile.name);
+  const visibleStories = filterVisiblePosts(stories);
+  const authoredAll = visibleStories.filter(
+    (s) => s.authorId === profile.id || s.author === profile.name
+  );
   // Display up to 2 cards cleanly by default matching the reference layout
   const authoredStories =
-    authoredAll.length > 0 ? authoredAll.slice(0, 2) : stories.slice(0, 2);
-  const savedStories = stories.filter((s) => s.saved);
+    authoredAll.length > 0 ? authoredAll.slice(0, 2) : visibleStories.slice(0, 2);
+  const savedStories = visibleStories.filter((s) => s.saved);
 
   return (
     <div className={styles.page}>

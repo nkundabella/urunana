@@ -2,6 +2,7 @@
 
 import { FormEvent, useMemo, useState } from "react";
 import StoryCard, { type StoryItem } from "./StoryCard";
+import { filterVisiblePosts, type PostStatus } from "@/lib/store";
 import styles from "./SearchExplorer.module.css";
 
 export type SearchStory = StoryItem & {
@@ -10,6 +11,8 @@ export type SearchStory = StoryItem & {
   type?: string;
   source?: string;
   language?: string;
+  status?: PostStatus;
+  authorId?: string;
 };
 
 type FilterKey = "topic" | "type" | "source" | "language";
@@ -87,7 +90,8 @@ export default function SearchExplorer({ stories }: Props) {
     Object.values(selected).some((arr) => arr.length > 0);
 
   const results = useMemo(() => {
-    const base = hasFilters ? stories : stories.filter((s) => s.feed);
+    const visible = filterVisiblePosts(stories);
+    const base = hasFilters ? visible : visible.filter((s) => s.feed);
     const q = appliedQuery.toLowerCase();
 
     return base.filter((story) => {

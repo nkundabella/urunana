@@ -5,7 +5,12 @@ import PageHero from "@/components/PageHero";
 import PublishEditor from "@/components/PublishEditor";
 import storiesData from "@/src/data/stories.json";
 import type { StoryItem } from "@/components/StoryCard";
+import type { PostStatus } from "@/lib/store";
 import styles from "./hindura.module.css";
+
+type StoryRecord = StoryItem & {
+  status?: PostStatus;
+};
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -27,7 +32,7 @@ export async function generateMetadata({ params }: Props) {
 
 export default async function HinduraInkuruPage({ params }: Props) {
   const { id } = await params;
-  const stories = storiesData as StoryItem[];
+  const stories = storiesData as StoryRecord[];
   const story =
     stories.find((s) => s.slug === id || s.id === id) ?? stories[0];
 
@@ -46,6 +51,7 @@ export default async function HinduraInkuruPage({ params }: Props) {
         />
         <PublishEditor
           storySlug={story.slug}
+          postStatus={story.status ?? "published"}
           initialValues={{
             title: story.title,
             body: DEFAULT_BODY,

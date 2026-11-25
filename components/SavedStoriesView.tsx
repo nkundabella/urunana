@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 import StoryCard, { type StoryItem } from "./StoryCard";
+import { filterVisiblePosts, type PostStatus } from "@/lib/store";
 import styles from "./SavedStoriesView.module.css";
 
 type StoryRecord = StoryItem & {
   saved?: boolean;
   following?: boolean;
+  status?: PostStatus;
+  authorId?: string;
 };
 
 type Props = {
@@ -18,10 +21,11 @@ type TabId = "inyandiko" | "abo-ukurikira";
 export default function SavedStoriesView({ stories }: Props) {
   const [tab, setTab] = useState<TabId>("inyandiko");
 
+  const publicStories = filterVisiblePosts(stories);
   const visibleStories =
     tab === "inyandiko"
-      ? stories.filter((s) => s.saved)
-      : stories.filter((s) => s.following);
+      ? publicStories.filter((s) => s.saved)
+      : publicStories.filter((s) => s.following);
 
   return (
     <>

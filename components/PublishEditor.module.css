@@ -322,8 +322,47 @@
   margin-top: 1.15rem;
   margin-left: clamp(0rem, 22%, 14rem);
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 1rem;
+  gap: 14px;
+}
+
+.draftBtn {
+  height: 2.35rem;
+  padding: 0 1.45rem;
+  border: 2px solid var(--cream);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--cream);
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+  transition: opacity 0.15s ease;
+}
+
+.draftBtn:hover {
+  opacity: 0.88;
+}
+
+.draftBtn:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+
+.toast {
+  display: inline-flex;
+  align-items: center;
+  height: 1.9rem;
+  padding: 0 0.85rem;
+  border-radius: var(--radius-pill);
+  background: rgba(245, 235, 220, 0.14);
+  border: 1px solid rgba(245, 235, 220, 0.3);
+  font-family: var(--font-body);
+  font-size: 0.78125rem;
+  font-weight: 700;
+  color: var(--cream);
 }
 
 .submitBtn {

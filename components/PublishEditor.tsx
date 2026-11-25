@@ -3,6 +3,7 @@
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { getStoryEdit, saveStoryEdit } from "@/src/data/storyEdits";
+import { saveDraft, type PostStatus } from "@/lib/store";
 import styles from "./PublishEditor.module.css";
 
 const CONTENT_TYPES = [
@@ -46,18 +47,21 @@ export type EditorInitialValues = {
 
 type Props = {
   storySlug?: string;
+  postStatus?: PostStatus;
   initialValues?: EditorInitialValues;
   submitLabel?: string;
 };
 
 export default function PublishEditor({
   storySlug,
+  postStatus = "draft",
   initialValues,
   submitLabel = "Tangaza",
 }: Props) {
   const router = useRouter();
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const draftIdRef = useRef<string | undefined>(storySlug);
 
   const [title, setTitle] = useState(initialValues?.title ?? "");
   const [body, setBody] = useState(initialValues?.body ?? "");
@@ -71,6 +75,9 @@ export default function PublishEditor({
   );
   const [researchConsent, setResearchConsent] = useState(false);
   const [published, setPublished] = useState(false);
+  const [draftToast, setDraftToast] = useState(false);
+
+  const showDraftButton = postStatus !== "published";
 
   useEffect(() => {
     if (!storySlug) return;
@@ -124,6 +131,23 @@ export default function PublishEditor({
     if (!file) return;
     insertFormatting(`\n![${file.name}](`, ")", "ifoto");
     e.target.value = "";
+  }
+
+  function handleSaveDraft() {
+    const saved = saveDraft({
+      id: draftIdRef.current,
+      slug: storySlug,
+      title: title.trim() || "Inyandiko itaratangazwa",
+      body,
+      excerpt: body.trim().slice(0, 140),
+      type: contentType,
+      source: sources[0],
+      topic: topics[0],
+      language,
+    });
+    draftIdRef.current = saved.id;
+    setDraftToast(true);
+    setTimeout(() => setDraftToast(false), 2500);
   }
 
   function handleSubmit(e: FormEvent) {
@@ -343,6 +367,15 @@ export default function PublishEditor({
         </label>
 
         <div className={styles.submitRow}>
+          {showDraftButton ? (
+            <button
+              type="button"
+              className={styles.draftBtn}
+              onClick={handleSaveDraft}
+            >
+              Bika nk&apos;inyandiko itaratangazwa
+            </button>
+          ) : null}
           <button
             type="submit"
             className={styles.submitBtn}
@@ -350,6 +383,11 @@ export default function PublishEditor({
           >
             {submitLabel}
           </button>
+          {draftToast ? (
+            <span className={styles.toast} role="status" aria-live="polite">
+              Byabitswe
+            </span>
+          ) : null}
           {published ? (
             <span className={styles.statusText} role="status" aria-live="polite">
               {storySlug ? "Impinduka zabitswe!" : "Inyandiko yawe yatangajwe!"}

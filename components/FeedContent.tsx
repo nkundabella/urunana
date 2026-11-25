@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 import StoryCard, { type StoryItem } from "./StoryCard";
+import { filterVisiblePosts, type PostStatus } from "@/lib/store";
 import styles from "./FeedContent.module.css";
 
 type FeedStory = StoryItem & {
   feed?: boolean;
   category?: string;
+  status?: PostStatus;
+  authorId?: string;
 };
 
 type Props = {
@@ -24,10 +27,11 @@ const CATEGORIES = [
 export default function FeedContent({ stories }: Props) {
   const [activeCategory, setActiveCategory] = useState<string>("Zose");
 
+  const publicStories = filterVisiblePosts(stories);
   const visibleStories =
     activeCategory === "Zose"
-      ? stories.filter((s) => s.feed)
-      : stories.filter((s) => s.category === activeCategory);
+      ? publicStories.filter((s) => s.feed)
+      : publicStories.filter((s) => s.category === activeCategory);
 
   return (
     <div className={styles.container}>
