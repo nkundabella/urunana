@@ -1,0 +1,29 @@
+[
+  {
+    "id": "kalisa-mugisha",
+    "name": "Kalisa Mugisha",
+    "badge": "Umwanditsi Washinze (Founding Contributor)",
+    "bio": "[Incamake y'umwanditsi]",
+    "interests": ["Amateka n'Umurage", "Imigani"],
+    "followers": 24,
+    "following": 8
+  },
+  {
+    "id": "uwase-aline",
+    "name": "Uwase Aline",
+    "badge": "Umwanditsi w'Imigani",
+    "bio": "Umushakashatsi ku migani y'imigenurano n'ururimi rw'Ikinyarwanda.",
+    "interests": ["Ururimi", "Imigani"],
+    "followers": 19,
+    "following": 12
+  },
+  {
+    "id": "niyonzima-eric",
+    "name": "Niyonzima Eric",
+    "badge": "Umwanditsi w'Umuco",
+    "bio": "Yandika ku bukorikori gakondo n'imigenzo yo mu Rwanda rwo hambere.",
+    "interests": ["Imigenzo Gakondo", "Ubukorikori"],
+    "followers": 15,
+    "following": 6
+  }
+]
