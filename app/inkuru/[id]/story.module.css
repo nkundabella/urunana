@@ -1,0 +1,22 @@
+.page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--cream);
+}
+
+.patternBand {
+  width: 100%;
+  height: 24px;
+  background-color: var(--ink);
+  background-image: url("/assets/pattern-bw.jpg");
+  background-repeat: repeat-x;
+  background-size: 320px auto;
+  background-position: 0% 42%;
+  border-bottom: 2px solid var(--ink);
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+}

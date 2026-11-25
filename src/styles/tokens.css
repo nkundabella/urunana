@@ -52,7 +52,7 @@
   --pad-inline: 3.6%;
   --header-h: 3.5rem; /* ~56px */
   --header-pill-h: 2.125rem; /* ~34px, fits 56px header */
-  --woven-h: 7px;
+  --woven-h: 8px;
   --zigzag-h: 1.25rem; /* ~20px */
   --split-min-h: 640px;
   --input-h: clamp(2.45rem, 4.6vh, 3.5rem); /* up to 56px */
