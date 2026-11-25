@@ -1,7 +1,7 @@
 import Link from "next/link";
 import styles from "./Header.module.css";
 
-export type HeaderVariant = "A" | "B" | "C";
+export type HeaderVariant = "A" | "B" | "C" | "landing";
 
 type Props = {
   variant?: HeaderVariant;
@@ -23,15 +23,7 @@ export default function Header({ variant = "C", notificationCount = 2 }: Props) 
           <span className={styles.tagline}>UMUCO N&apos;URURIMI</span>
         </Link>
 
-        {variant !== "B" ? (
-          <nav className={styles.nav} aria-label="Ibiyerekeye">
-            {NAV.map((item) => (
-              <Link key={item.href} href={item.href} className={styles.navLink}>
-                {item.label}
-              </Link>
-            ))}
-          </nav>
-        ) : (
+        {variant === "B" ? (
           <label className={styles.searchB}>
             <input
               type="search"
@@ -39,6 +31,16 @@ export default function Header({ variant = "C", notificationCount = 2 }: Props) 
               aria-label="Shakisha mu Urunana"
             />
           </label>
+        ) : variant === "landing" ? (
+          <div aria-hidden="true" />
+        ) : (
+          <nav className={styles.nav} aria-label="Ibiyerekeye">
+            {NAV.map((item) => (
+              <Link key={item.href} href={item.href} className={styles.navLink}>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
         )}
 
         <div className={styles.actions}>
@@ -103,6 +105,17 @@ export default function Header({ variant = "C", notificationCount = 2 }: Props) 
                 Kwandika Inkuru
               </Link>
               <span className={styles.lang}>RW</span>
+              <Link href="/kwinjira" className={styles.textLink}>
+                Kwinjira
+              </Link>
+              <Link href="/kwiyandikisha" className={styles.pillAccent}>
+                Kwiyandikisha
+              </Link>
+            </>
+          )}
+
+          {variant === "landing" && (
+            <>
               <Link href="/kwinjira" className={styles.textLink}>
                 Kwinjira
               </Link>

@@ -2,7 +2,11 @@ import Link from "next/link";
 import WovenStrip from "./WovenStrip";
 import styles from "./Footer.module.css";
 
-export default function Footer() {
+type Props = {
+  showAboutLink?: boolean;
+};
+
+export default function Footer({ showAboutLink = false }: Props) {
   return (
     <footer className={styles.footer}>
       <div className={styles.inner}>
@@ -14,6 +18,9 @@ export default function Footer() {
         </div>
         <nav className={styles.links} aria-label="Amakuru y'ubufatanye">
           <Link href="/amategeko">Amategeko y&apos;Umuryango</Link>
+          {showAboutLink ? (
+            <Link href="/ibyerekeye">Ibyerekeye Urunana</Link>
+          ) : null}
           <Link href="/twandikire">Twandikire</Link>
         </nav>
       </div>

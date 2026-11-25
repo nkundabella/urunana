@@ -1,0 +1,435 @@
+.page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--admin-bg);
+  color: var(--cream);
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+  padding: 2rem 0 4rem;
+}
+
+.container {
+  width: min(94%, 1340px);
+  margin-inline: auto;
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--orange);
+}
+
+.title {
+  margin: 0.45rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(2rem, 3.8vw, 3.4rem);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  color: var(--cream);
+}
+
+.pillRow {
+  margin-top: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.55rem;
+}
+
+.pill {
+  height: 2rem;
+  padding: 0 1rem;
+  border-radius: var(--radius-pill);
+  border: 1.5px solid rgba(245, 235, 220, 0.72);
+  background: transparent;
+  color: var(--cream);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+  transition: background-color 0.14s ease, border-color 0.14s ease, color 0.14s ease;
+}
+
+.pill:hover {
+  border-color: var(--cream);
+}
+
+.pill:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+
+.pillActive {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: var(--ink);
+}
+
+.card {
+  background: var(--admin-card);
+  border-radius: 18px;
+  border-top: 5px solid var(--orange);
+  padding: 1.25rem 1.35rem;
+}
+
+.kpiGrid {
+  margin-top: 1.35rem;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1.1rem;
+}
+
+.kpiLabel {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: rgba(245, 235, 220, 0.78);
+}
+
+.kpiValue {
+  margin: 0.55rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 1.5rem;
+  line-height: 1.1;
+  color: var(--cream);
+}
+
+.kpiCaption {
+  margin: 0.45rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  color: rgba(245, 235, 220, 0.48);
+}
+
+.chartsGrid {
+  margin-top: 1.25rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.1rem;
+}
+
+.cardHeading {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--cream);
+}
+
+.bars {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.85rem;
+}
+
+.barRow {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.barMeta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+}
+
+.barLabel {
+  color: var(--cream);
+}
+
+.barPct {
+  color: rgba(245, 235, 220, 0.62);
+}
+
+.barTrack {
+  width: 100%;
+  height: 9px;
+  border-radius: 999px;
+  background: #2b211b;
+  overflow: hidden;
+}
+
+.barFill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.barTone0 {
+  background: var(--orange);
+}
+
+.barTone1 {
+  background: #d97328;
+}
+
+.barTone2 {
+  background: #b65a1e;
+}
+
+.barTone3 {
+  background: #8c4115;
+}
+
+.footnote {
+  margin: 0.9rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  color: rgba(245, 235, 220, 0.45);
+}
+
+.section {
+  margin-top: 2.5rem;
+}
+
+.sectionHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.sectionTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(1.35rem, 2vw, 1.75rem);
+  letter-spacing: -0.02em;
+  color: var(--cream);
+}
+
+.sectionMeta {
+  font-family: var(--font-body);
+  font-size: 0.78125rem;
+  color: rgba(245, 235, 220, 0.62);
+}
+
+.tableWrap {
+  margin-top: 1.25rem;
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+}
+
+.table th {
+  padding: 0 0.75rem 0.75rem 0;
+  text-align: left;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--orange);
+  white-space: nowrap;
+}
+
+.table td {
+  padding: 0.85rem 0.75rem 0.85rem 0;
+  border-top: 1px solid rgba(245, 235, 220, 0.12);
+  vertical-align: middle;
+}
+
+.cellItem {
+  font-weight: 500;
+  color: var(--cream);
+  white-space: nowrap;
+}
+
+.cellNum {
+  color: var(--cream);
+  white-space: nowrap;
+}
+
+.cellReason {
+  color: rgba(245, 235, 220, 0.86);
+}
+
+.statusFilled,
+.statusOutline {
+  display: inline-flex;
+  align-items: center;
+  height: 1.65rem;
+  padding: 0 0.75rem;
+  border-radius: var(--radius-pill);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.statusFilled {
+  background: var(--orange);
+  color: var(--ink);
+}
+
+.statusOutline {
+  border: 1.25px solid var(--orange);
+  color: var(--orange);
+  background: transparent;
+}
+
+.actionGroup {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.actionOutline,
+.actionFilled {
+  height: 1.7rem;
+  padding: 0 0.75rem;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  line-height: 1;
+}
+
+.actionOutline {
+  border: 1.25px solid rgba(245, 235, 220, 0.72);
+  background: transparent;
+  color: var(--cream);
+}
+
+.actionOutline:hover {
+  border-color: var(--cream);
+}
+
+.actionFilled {
+  border: 1.25px solid var(--orange);
+  background: var(--orange);
+  color: var(--ink);
+}
+
+.emptyRow {
+  color: rgba(245, 235, 220, 0.6);
+  text-align: center;
+  padding-block: 1.75rem;
+}
+
+.settingsGrid {
+  margin-top: 1.15rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.1rem;
+}
+
+.topicChips {
+  margin-top: 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.topicChip {
+  display: inline-flex;
+  align-items: center;
+  height: 1.7rem;
+  padding: 0 0.75rem;
+  border-radius: var(--radius-pill);
+  border: 1px solid rgba(245, 235, 220, 0.28);
+  background: rgba(245, 235, 220, 0.05);
+  color: var(--cream);
+  font-size: 0.71875rem;
+  font-weight: 600;
+}
+
+.addChip {
+  height: 1.7rem;
+  padding: 0 0.8rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--orange);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.71875rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.progressTrack {
+  margin-top: 0.95rem;
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: #2b211b;
+  overflow: hidden;
+}
+
+.progressFill {
+  height: 100%;
+  background: var(--orange);
+  border-radius: 999px;
+  transition: width 0.2s ease;
+}
+
+.settingNote {
+  margin: 0.6rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.71875rem;
+  color: rgba(245, 235, 220, 0.6);
+}
+
+.orangeBtn {
+  margin-top: 0.9rem;
+  height: 2rem;
+  padding: 0 1.15rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: var(--orange);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.sliderWrap {
+  margin-top: 0.95rem;
+}
+
+.slider {
+  width: 100%;
+  accent-color: var(--orange);
+  cursor: pointer;
+}
+
+@media (max-width: 1024px) {
+  .kpiGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .chartsGrid,
+  .settingsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 600px) {
+  .kpiGrid {
+    grid-template-columns: 1fr;
+  }
+}

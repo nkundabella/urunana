@@ -1,0 +1,511 @@
+.page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--cream);
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+}
+
+/* 1. Hero */
+.hero {
+  width: 100%;
+  background: var(--ink);
+  color: var(--cream);
+  padding: 1.5rem 1.5rem 3.5rem;
+  text-align: center;
+}
+
+.heroInner {
+  width: min(100%, 920px);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.cowWrap {
+  width: min(86%, 410px);
+}
+
+.cowImg {
+  width: 100%;
+  height: auto;
+  display: block;
+  mix-blend-mode: lighten;
+  -webkit-mask-image: radial-gradient(
+    ellipse 74% 80% at 50% 46%,
+    #000 58%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 74% 80% at 50% 46%,
+    #000 58%,
+    transparent 100%
+  );
+}
+
+.wordmark {
+  margin: clamp(-3.8rem, -5.5vw, -2rem) 0 0;
+  position: relative;
+  z-index: 2;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(3.75rem, 10.5vw, 8.75rem);
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  background-image: url("/assets/blue-baskets.jpg");
+  background-size: cover;
+  background-position: center;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.heroLead {
+  margin: 1.15rem 0 0;
+  max-width: 34rem;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(0.95rem, 1.35vw, 1.2rem);
+  line-height: 1.5;
+  color: var(--cream);
+}
+
+.heroActions {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.8rem;
+}
+
+.btnOrange,
+.btnOutlineCream {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.55rem;
+  padding: 0 1.65rem;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: 0.84375rem;
+  font-weight: 700;
+  text-decoration: none;
+  line-height: 1;
+  transition: opacity 0.15s ease;
+}
+
+.btnOrange {
+  background: var(--orange);
+  color: var(--ink);
+  border: 1.5px solid var(--orange);
+}
+
+.btnOutlineCream {
+  background: transparent;
+  color: var(--cream);
+  border: 1.5px solid rgba(245, 235, 220, 0.72);
+}
+
+.btnOrange:hover,
+.btnOutlineCream:hover {
+  opacity: 0.9;
+}
+
+/* 2. Word of the Week */
+.wotwBand {
+  width: 100%;
+  padding: clamp(2.5rem, 4.5vw, 3.75rem) 1.5rem;
+  background-color: var(--ink-2);
+  background-image: url("/assets/patchwork.jpg");
+  background-repeat: repeat-x;
+  background-size: 420px auto;
+  background-position: center top;
+  display: flex;
+  justify-content: center;
+}
+
+.wotwCard {
+  position: relative;
+  width: min(100%, 660px);
+  background: var(--paper);
+  padding: clamp(1.75rem, 3vw, 2.5rem) clamp(1.75rem, 3.5vw, 2.75rem);
+  transform: rotate(-1.2deg);
+  box-shadow: 0 18px 40px rgba(11, 7, 5, 0.32);
+}
+
+.wotwCard::after {
+  content: "";
+  position: absolute;
+  inset: 11px;
+  border: 1.5px dotted var(--maroon);
+  pointer-events: none;
+}
+
+.wotwEyebrow {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--maroon);
+}
+
+.wotwWord {
+  margin: 0.45rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(2.25rem, 4.2vw, 3.4rem);
+  line-height: 1;
+  letter-spacing: -0.025em;
+  color: var(--maroon);
+}
+
+.wotwPhonetic {
+  margin: 0.35rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--rust);
+}
+
+.wotwDef {
+  margin: 0.85rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(0.95rem, 1.3vw, 1.125rem);
+  line-height: 1.48;
+  color: var(--ink);
+}
+
+.wotwNote {
+  margin: 0.75rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  line-height: 1.45;
+  color: var(--gray);
+}
+
+/* 3. Categories & Featured Stories */
+.creamSection {
+  width: 100%;
+  background: var(--cream);
+  padding: clamp(2.75rem, 4.5vw, 4rem) 1.5rem clamp(3.25rem, 5.5vw, 4.75rem);
+}
+
+.container {
+  width: min(100%, 1040px);
+  margin-inline: auto;
+}
+
+.sectionEyebrowCenter,
+.sectionEyebrow {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--maroon);
+}
+
+.sectionEyebrowCenter {
+  text-align: center;
+}
+
+.doorsHeading {
+  margin: 0.5rem 0 0;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(1.75rem, 3vw, 2.45rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.categoriesGrid {
+  margin-top: 2rem;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 1.25rem;
+}
+
+.catItem {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  text-decoration: none;
+  color: var(--ink);
+  gap: 0.75rem;
+}
+
+.catCircle {
+  width: clamp(5.5rem, 9.5vw, 8rem);
+  height: clamp(5.5rem, 9.5vw, 8rem);
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  overflow: hidden;
+  background: var(--sand);
+  transition: transform 0.16s ease;
+}
+
+.catItem:hover .catCircle {
+  transform: translateY(-2px);
+}
+
+.catImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.catCrop1 {
+  object-position: 8% 12%;
+  transform: scale(1.65);
+}
+
+.catCrop2 {
+  object-position: 36% 32%;
+  transform: scale(1.55);
+}
+
+.catCrop3 {
+  object-position: 32% 52%;
+  transform: scale(1.45);
+}
+
+.catCrop4 {
+  object-position: 88% 42%;
+  transform: scale(1.55);
+}
+
+.catCrop5 {
+  object-position: 52% 84%;
+  transform: scale(1.75);
+}
+
+.catLabel {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.875rem;
+  line-height: 1.25;
+  white-space: pre-line;
+  color: var(--ink);
+}
+
+.divider {
+  margin: 2.75rem 0 2.25rem;
+  border: 0;
+  border-bottom: 1.5px solid var(--ink);
+  width: 100%;
+}
+
+.storiesGrid {
+  margin-top: 1.5rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(2rem, 4vw, 3.5rem);
+  align-items: start;
+}
+
+.storyLink {
+  display: block;
+  text-decoration: none;
+  color: inherit;
+}
+
+.archFrame {
+  width: 100%;
+  max-width: 390px;
+  aspect-ratio: 3 / 3.4;
+  border-radius: 999px 999px 0 0;
+  border: 2.5px solid var(--ink);
+  overflow: hidden;
+  background: var(--paper);
+  box-shadow: 10px 10px 0 var(--orange);
+}
+
+.rectFrame {
+  width: 100%;
+  aspect-ratio: 16 / 10;
+  border: 2.5px solid var(--ink);
+  overflow: hidden;
+  background: var(--paper);
+  box-shadow: -10px 10px 0 var(--navy);
+}
+
+.storyImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.storyTagOrange,
+.storyTagNavy {
+  margin: 1.25rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.storyTagOrange {
+  color: var(--rust);
+}
+
+.storyTagNavy {
+  color: var(--navy);
+}
+
+.storyTitle {
+  margin: 0.45rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(1.3rem, 1.9vw, 1.65rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.storyExcerpt {
+  margin: 0.55rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: var(--gray);
+}
+
+.storyMeta {
+  margin: 0.7rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--gray);
+}
+
+.storyMeta strong {
+  color: var(--ink);
+}
+
+/* 5. Maroon CTA */
+.ctaSection {
+  position: relative;
+  width: 100%;
+  background: var(--maroon-asset);
+  color: var(--cream);
+  padding: clamp(3.25rem, 5.5vw, 4.75rem) 1.5rem;
+  text-align: center;
+  overflow: hidden;
+}
+
+.ctaBaskets {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: clamp(12rem, 24vw, 22rem);
+  height: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ctaBasketsImg {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 185%;
+  max-width: none;
+  height: auto;
+  transform: translateY(36%);
+}
+
+.ctaInner {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 680px);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.ctaEyebrow {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--orange);
+}
+
+.ctaTitle {
+  margin: 0.7rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(2rem, 3.8vw, 3.25rem);
+  line-height: 1.04;
+  letter-spacing: -0.025em;
+  color: var(--cream);
+}
+
+.ctaSub {
+  margin: 0.85rem 0 0;
+  max-width: 26rem;
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: rgba(245, 235, 220, 0.88);
+}
+
+.ctaBtn {
+  margin-top: 1.45rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.6rem;
+  padding: 0 1.85rem;
+  border-radius: var(--radius-pill);
+  background: var(--cream);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.84375rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.ctaBtn:hover {
+  opacity: 0.92;
+}
+
+/* 6. Thin B&W Discs Strip */
+.discsStrip {
+  width: 100%;
+  height: 68px;
+  background-color: #c9c7c3;
+  background-image: url("/assets/bw-discs.jpg");
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: right 36%;
+}
+
+@media (max-width: 900px) {
+  .categoriesGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .storiesGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .rectFrame {
+    margin-left: 10px;
+    width: calc(100% - 10px);
+  }
+}
