@@ -18,9 +18,9 @@
   --sand: #ebdcc3;
   --brown: #5c3317;
 
-  /* Fonts (set via next/font CSS variables on <html>) */
-  --font-display: var(--font-fraunces), "Times New Roman", serif;
-  --font-body: var(--font-dm-sans), "Helvetica Neue", sans-serif;
+  /* Fonts (loaded via Google Fonts in app/layout.tsx) */
+  --font-display: "Fraunces", "Times New Roman", serif;
+  --font-body: "DM Sans", "Helvetica Neue", sans-serif;
 
   /* Type @1440 — use clamp for fluid scaling */
   --text-h1: clamp(2.5rem, 5vw, 4.5rem); /* ~72px */
@@ -53,7 +53,7 @@
   --header-h: 3.5rem; /* ~56px */
   --header-pill-h: 2.125rem; /* ~34px, fits 56px header */
   --woven-h: 7px;
-  --zigzag-h: 1.75rem; /* ~28px */
+  --zigzag-h: 1.25rem; /* ~20px */
   --split-min-h: 640px;
   --input-h: clamp(2.45rem, 4.6vh, 3.5rem); /* up to 56px */
   --pill-h: clamp(2.875rem, 3.5vw, 3.5rem); /* 46–56px */

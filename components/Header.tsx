@@ -22,7 +22,7 @@ export default function Header({ variant = "C" }: Props) {
           <span className={styles.tagline}>UMUCO N&apos;URURIMI</span>
         </Link>
 
-        {variant !== "B" && (
+        {variant !== "B" ? (
           <nav className={styles.nav} aria-label="Ibiyerekeye">
             {NAV.map((item) => (
               <Link key={item.href} href={item.href} className={styles.navLink}>
@@ -30,6 +30,14 @@ export default function Header({ variant = "C" }: Props) {
               </Link>
             ))}
           </nav>
+        ) : (
+          <label className={styles.searchB}>
+            <input
+              type="search"
+              placeholder="Shakisha mu Urunana…"
+              aria-label="Shakisha mu Urunana"
+            />
+          </label>
         )}
 
         <div className={styles.actions}>
@@ -64,13 +72,6 @@ export default function Header({ variant = "C" }: Props) {
 
           {variant === "B" && (
             <>
-              <label className={styles.searchB}>
-                <input
-                  type="search"
-                  placeholder="Shakisha mu Urunana…"
-                  aria-label="Shakisha mu Urunana"
-                />
-              </label>
               <Link href="/kwandika" className={styles.pillAccent}>
                 Kwandika Inkuru
               </Link>

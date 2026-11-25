@@ -137,7 +137,7 @@
 }
 
 .searchB {
-  width: clamp(14rem, 28vw, 22rem);
+  width: clamp(14rem, 32vw, 28rem);
 }
 
 .searchA input,

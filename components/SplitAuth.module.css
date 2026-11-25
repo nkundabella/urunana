@@ -144,7 +144,15 @@
 }
 
 .portraitSplit {
-  grid-template-columns: minmax(0, min(50%, 66dvh)) 1fr;
+  grid-template-columns: 49% 51%;
+}
+
+.portraitSplit .caption {
+  left: clamp(2rem, 3.2vw, 2.75rem);
+  right: clamp(2rem, 3.2vw, 2.75rem);
+  bottom: clamp(2.5rem, 5.8vh, 3.5rem);
+  width: auto;
+  border-radius: var(--radius-caption);
 }
 
 .portraitSplit .formPane > * {

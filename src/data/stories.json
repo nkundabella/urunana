@@ -1,0 +1,107 @@
+[
+  {
+    "id": "umurage-wa-ruganzu-1",
+    "slug": "umurage-wa-ruganzu-ii-ndoli",
+    "title": "Umurage wa Ruganzu II Ndoli n'Inzira y'Ubutwari mu Mateka y'u Rwanda",
+    "excerpt": "Amateka n'ibitekerezo bya kera bigaragaza ubutwari bwa Ruganzu Ndoli n'uko yagaruye ingoma.",
+    "author": "Kalisa Mugisha",
+    "comments": 2,
+    "saved": true,
+    "following": false,
+    "feed": true,
+    "category": "Amateka n'Umurage",
+    "topic": "Amateka n'Umurage",
+    "type": "Inkuru",
+    "source": "Oral tradition",
+    "language": "Ikinyarwanda",
+    "tags": [
+      { "label": "Ubuvanganzo bwo mu muryango", "tone": "orange" },
+      { "label": "Amateka yanditse", "tone": "sand" },
+      { "label": "Kinyarwanda", "tone": "ink" }
+    ]
+  },
+  {
+    "id": "umurage-wa-ruganzu-2",
+    "slug": "umurage-wa-ruganzu-ii-ndoli-igice-2",
+    "title": "Umurage wa Ruganzu II Ndoli n'Inzira y'Ubutwari mu Mateka y'u Rwanda",
+    "excerpt": "Amateka n'ibitekerezo bya kera bigaragaza ubutwari bwa Ruganzu Ndoli n'uko yagaruye ingoma.",
+    "author": "Kalisa Mugisha",
+    "comments": 0,
+    "saved": true,
+    "following": false,
+    "feed": true,
+    "category": "Amateka n'Umurage",
+    "topic": "Ururimi rw'Ikinyarwanda",
+    "type": "Article",
+    "source": "Oral tradition",
+    "language": "Ikinyarwanda",
+    "tags": [
+      { "label": "Ubuvanganzo bwo mu muryango", "tone": "orange" },
+      { "label": "Amateka yanditse", "tone": "sand" },
+      { "label": "Kinyarwanda", "tone": "ink" }
+    ]
+  },
+  {
+    "id": "umurage-wa-ruganzu-3",
+    "slug": "umurage-wa-ruganzu-ii-ndoli-igice-3",
+    "title": "Umurage wa Ruganzu II Ndoli n'Inzira y'Ubutwari mu Mateka y'u Rwanda",
+    "excerpt": "Amateka n'ibitekerezo bya kera bigaragaza ubutwari bwa Ruganzu Ndoli n'uko yagaruye ingoma.",
+    "author": "Kalisa Mugisha",
+    "comments": 1,
+    "saved": false,
+    "following": false,
+    "feed": true,
+    "category": "Ururimi",
+    "topic": "Imigani n'Ibisakuzo",
+    "type": "Inkuru",
+    "source": "Personal experience",
+    "language": "Ikinyarwanda",
+    "tags": [
+      { "label": "Ubuvanganzo bwo mu muryango", "tone": "orange" },
+      { "label": "Amateka yanditse", "tone": "sand" },
+      { "label": "Kinyarwanda", "tone": "ink" }
+    ]
+  },
+  {
+    "id": "imigani-y-imigenurano",
+    "slug": "wisdom-of-unity-imigani",
+    "title": "Wisdom of Unity in Ancient Rwandan Proverbs (Imigani y'Imigenurano)",
+    "excerpt": "Uko imigani ya kera yigisha ubumwe, ubwubahane n'ubufatanye mu muryango Nyarwanda.",
+    "author": "Uwase Aline",
+    "comments": 7,
+    "saved": false,
+    "following": true,
+    "feed": false,
+    "category": "Imigani n'Ibisakuzo",
+    "topic": "Imigani n'Ibisakuzo",
+    "type": "Article",
+    "source": "Oral tradition",
+    "language": "English",
+    "tags": [
+      { "label": "Imigani n'Ibitekerezo", "tone": "orange" },
+      { "label": "Ururimi", "tone": "sand" },
+      { "label": "Kinyarwanda", "tone": "ink" }
+    ]
+  },
+  {
+    "id": "ubuhanga-bw-agaseke",
+    "slug": "ubuhanga-bw-agaseke-mu-muco",
+    "title": "Ubuhanga bw'Agaseke n'Amabara Yako mu Muco Nyarwanda",
+    "excerpt": "Inkomoko y'imitako y'agaseke, ubusobanuro bw'amabara n'uruhare rwako mu birori gakondo.",
+    "author": "Niyonzima Eric",
+    "comments": 4,
+    "saved": false,
+    "following": true,
+    "feed": false,
+    "category": "Imigenzo Gakondo",
+    "topic": "Amateka n'Umurage",
+    "type": "Inkuru",
+    "source": "Personal experience",
+    "language": "Ikinyarwanda",
+    "tags": [
+      { "label": "Imigenzo Gakondo", "tone": "orange" },
+      { "label": "Ubukorikori", "tone": "sand" },
+      { "label": "Kinyarwanda", "tone": "ink" }
+    ]
+  }
+]

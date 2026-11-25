@@ -21,7 +21,7 @@ export default function ForgotPasswordPage() {
           portraitSplit
           imageSide="left"
           imageLayout="cover"
-          imagePosition="center 48%"
+          imagePosition="center 52%"
           imageSrc="/assets/patchwork.jpg"
           imageAlt="Imyenda gakondo y'umuco"
           caption={{

@@ -1,0 +1,47 @@
+.tabs {
+  margin-top: clamp(1.5rem, 2.5vw, 2.15rem);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.9rem;
+}
+
+.tab {
+  height: clamp(2.65rem, 3.3vw, 3rem); /* ~46-48px */
+  padding: 0 clamp(1.35rem, 1.8vw, 1.75rem);
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+  transition: background-color 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.tab:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+
+.tabActive {
+  background: var(--orange);
+  border-color: var(--orange);
+  color: var(--ink);
+  box-shadow: 0 10px 22px rgba(242, 138, 53, 0.28);
+}
+
+.grid {
+  margin-top: clamp(1.75rem, 2.8vw, 2.5rem);
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(1.5rem, 3.05vw, 2.75rem); /* ~44px @1440 */
+}
+
+@media (max-width: 900px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+}
