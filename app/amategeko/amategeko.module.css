@@ -1,0 +1,150 @@
+.page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--cream);
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+  padding: 2.25rem 1.5rem 4rem;
+}
+
+.container {
+  width: min(100%, 1040px);
+  margin-inline: auto;
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--maroon);
+}
+
+.title {
+  margin: 0.5rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(2rem, 3.8vw, 3.35rem);
+  line-height: 1.04;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+}
+
+.lead {
+  margin: 0.9rem 0 0;
+  max-width: 44rem;
+  font-family: var(--font-display);
+  font-weight: 400;
+  font-size: clamp(1rem, 1.4vw, 1.25rem);
+  line-height: 1.45;
+  color: var(--gray);
+}
+
+.examples {
+  margin-top: 1.75rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.75rem;
+  padding-right: 10px;
+}
+
+.exampleCard {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 1.35rem 1.5rem;
+}
+
+.cardTeal {
+  box-shadow: 10px 10px 0 var(--teal);
+}
+
+.cardRed {
+  box-shadow: 10px 10px 0 var(--red);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  height: 1.6rem;
+  padding: 0 0.8rem;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: 0.71875rem;
+  font-weight: 700;
+  color: var(--cream);
+  line-height: 1;
+}
+
+.pillTeal {
+  background: var(--teal);
+}
+
+.pillRed {
+  background: var(--red);
+}
+
+.exampleText {
+  margin: 0.85rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1rem, 1.4vw, 1.25rem);
+  line-height: 1.38;
+  color: var(--ink);
+}
+
+.rulesGrid {
+  margin: 2.25rem 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: 2.25rem;
+  row-gap: 0;
+}
+
+.ruleCell {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  min-height: 5.5rem;
+  padding: 1rem 0 1.25rem;
+  border-top: 2px solid var(--ink);
+}
+
+.ruleNum {
+  width: 3.75rem;
+  flex-shrink: 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(2rem, 3vw, 2.75rem);
+  line-height: 0.92;
+  letter-spacing: -0.02em;
+  color: var(--orange);
+}
+
+.ruleTitle {
+  padding-top: 0.15rem;
+  font-family: var(--font-body);
+  font-size: clamp(0.9375rem, 1.2vw, 1.0625rem);
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--ink);
+}
+
+@media (max-width: 900px) {
+  .main {
+    padding: 1.5rem 1.25rem 3rem;
+  }
+
+  .examples,
+  .rulesGrid {
+    grid-template-columns: 1fr;
+  }
+}

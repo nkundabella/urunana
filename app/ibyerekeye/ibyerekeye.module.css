@@ -1,0 +1,235 @@
+.page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--cream);
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+}
+
+.hero {
+  width: 100%;
+  background: var(--ink);
+  color: var(--cream);
+  padding: clamp(2.5rem, 5vw, 4rem) 1.5rem clamp(1.5rem, 3vw, 2.5rem);
+  text-align: center;
+}
+
+.heroInner {
+  width: min(100%, 960px);
+  margin-inline: auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.heroEyebrow {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--orange);
+}
+
+.heroTitle {
+  margin: 0.85rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(2rem, 4.4vw, 3.85rem);
+  line-height: 1.03;
+  letter-spacing: -0.025em;
+  color: var(--cream);
+}
+
+.cowWrap {
+  margin-top: clamp(1rem, 2vw, 1.75rem);
+  width: min(85%, 360px);
+}
+
+.cowImg {
+  width: 100%;
+  height: auto;
+  display: block;
+  mix-blend-mode: lighten;
+  -webkit-mask-image: radial-gradient(
+    ellipse 74% 80% at 50% 48%,
+    #000 58%,
+    transparent 100%
+  );
+  mask-image: radial-gradient(
+    ellipse 74% 80% at 50% 48%,
+    #000 58%,
+    transparent 100%
+  );
+}
+
+.bodySection {
+  width: 100%;
+  background: var(--cream);
+  padding: clamp(2.5rem, 4.5vw, 3.75rem) 1.5rem clamp(3rem, 5.5vw, 4.5rem);
+}
+
+.container {
+  width: min(100%, 1040px);
+  margin-inline: auto;
+}
+
+.eyebrow {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--maroon);
+}
+
+.circlesRow {
+  margin-top: 1.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex-wrap: wrap;
+  row-gap: 1.5rem;
+}
+
+.circleItem {
+  position: relative;
+  margin-left: -8px;
+}
+
+.circleItem:first-child {
+  margin-left: 0;
+}
+
+.circleFrame {
+  width: clamp(5.75rem, 9.4vw, 8.25rem); /* ~132px @1440 */
+  height: clamp(5.75rem, 9.4vw, 8.25rem);
+  border-radius: 50%;
+  border: 2px solid var(--ink);
+  overflow: hidden;
+  background: var(--sand);
+}
+
+.circleImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.crop1 {
+  object-position: 8% 12%;
+  transform: scale(1.65);
+}
+
+.crop2 {
+  object-position: 35% 32%;
+  transform: scale(1.55);
+}
+
+.crop3 {
+  object-position: 32% 52%;
+  transform: scale(1.45);
+}
+
+.crop4 {
+  object-position: 88% 42%;
+  transform: scale(1.55);
+}
+
+.crop5 {
+  object-position: 52% 84%;
+  transform: scale(1.75);
+}
+
+.circlePill {
+  position: absolute;
+  left: 50%;
+  bottom: -0.55rem;
+  transform: translateX(-50%);
+  z-index: 2;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.22rem 0.65rem;
+  border-radius: var(--radius-pill);
+  background: var(--ink);
+  color: var(--cream);
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.summary {
+  margin: 2.35rem auto 0;
+  max-width: 41rem;
+  text-align: center;
+  font-family: var(--font-display);
+  font-weight: 500;
+  font-size: clamp(1rem, 1.45vw, 1.3rem);
+  line-height: 1.5;
+  color: var(--gray);
+}
+
+.pillarsGrid {
+  margin-top: 2.5rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1.75rem;
+  padding-right: 10px;
+}
+
+.pillarCard {
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  padding: 1.5rem 1.65rem;
+}
+
+.cardSoft {
+  box-shadow: var(--shadow-card);
+}
+
+.cardNavy {
+  box-shadow: 10px 10px 0 var(--navy);
+}
+
+.cardOrange {
+  box-shadow: 10px 10px 0 var(--orange);
+}
+
+.pillarTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(1.35rem, 1.9vw, 1.75rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.pillarDesc {
+  margin: 0.6rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: var(--gray);
+}
+
+@media (max-width: 900px) {
+  .pillarsGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .circleItem {
+    margin-left: -4px;
+  }
+}
