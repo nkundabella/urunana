@@ -1,8 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import StoryCard, { type StoryItem } from "./StoryCard";
-import { filterVisiblePosts, type PostStatus } from "@/lib/store";
+import {
+  filterVisiblePosts,
+  getPosts,
+  type PostStatus,
+  type StorePost,
+} from "@/lib/store";
+import { getSession } from "@/src/data/session";
 import styles from "./SavedStoriesView.module.css";
 
 type StoryRecord = StoryItem & {
@@ -16,16 +22,37 @@ type Props = {
   stories: StoryRecord[];
 };
 
-type TabId = "inyandiko" | "abo-ukurikira";
+type TabId = "inyandiko" | "abo-ukurikira" | "izitaratangazwa";
 
 export default function SavedStoriesView({ stories }: Props) {
   const [tab, setTab] = useState<TabId>("inyandiko");
+  const [allPosts, setAllPosts] = useState<StoryRecord[]>(stories);
+  const [viewerSlug, setViewerSlug] = useState("kalisa-mugisha");
 
-  const publicStories = filterVisiblePosts(stories);
+  useEffect(() => {
+    const stored = getPosts() as StorePost[];
+    if (stored.length > 0) {
+      setAllPosts(stored);
+    }
+    const session = getSession();
+    if (session?.displayName) {
+      setViewerSlug(session.displayName.toLowerCase().replace(/\s+/g, "-"));
+    }
+  }, []);
+
+  const publicStories = filterVisiblePosts(allPosts);
+  const myDrafts = allPosts.filter((s) => {
+    if (s.status !== "draft") return false;
+    const authorId = s.authorId ?? "";
+    return authorId === viewerSlug || authorId.startsWith(viewerSlug);
+  });
+
   const visibleStories =
     tab === "inyandiko"
       ? publicStories.filter((s) => s.saved)
-      : publicStories.filter((s) => s.following);
+      : tab === "abo-ukurikira"
+        ? publicStories.filter((s) => s.following)
+        : myDrafts;
 
   return (
     <>
@@ -48,13 +75,49 @@ export default function SavedStoriesView({ stories }: Props) {
         >
           Abo ukurikira
         </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={tab === "izitaratangazwa"}
+          className={`${styles.tab}${tab === "izitaratangazwa" ? ` ${styles.tabActive}` : ""}`}
+          onClick={() => setTab("izitaratangazwa")}
+        >
+          Izitaratangazwa
+        </button>
       </div>
 
-      <div className={styles.grid} role="tabpanel">
-        {visibleStories.map((story) => (
-          <StoryCard key={story.id} story={story} />
-        ))}
-      </div>
+      {tab === "izitaratangazwa" && visibleStories.length === 0 ? (
+        <p className={styles.empty} role="tabpanel">
+          Nta nyandiko itaratangazwa ufite.
+        </p>
+      ) : (
+        <div className={styles.grid} role="tabpanel">
+          {visibleStories.map((story) => {
+            if (tab === "izitaratangazwa") {
+              const hasDraftTag = story.tags.some(
+                (t) => t.label === "Itaratangazwa"
+              );
+              const draftStory: StoryItem = {
+                ...story,
+                tags: hasDraftTag
+                  ? story.tags
+                  : [
+                      { label: "Itaratangazwa", tone: "sand" },
+                      ...story.tags,
+                    ],
+              };
+              return (
+                <StoryCard
+                  key={story.id}
+                  story={draftStory}
+                  href={`/inkuru/${story.slug || story.id}/hindura`}
+                />
+              );
+            }
+            return <StoryCard key={story.id} story={story} />;
+          })}
+        </div>
+      )}
     </>
   );
 }

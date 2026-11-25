@@ -143,6 +143,143 @@
   box-shadow: var(--shadow-pill);
 }
 
+.pillMaroonOutline {
+  border: 2px solid var(--maroon);
+  background: transparent;
+  color: var(--maroon);
+}
+
+.graceNote {
+  margin: -0.35rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.78125rem;
+  color: var(--gray);
+}
+
+.removalLink {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  color: var(--maroon);
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.removalLink:hover {
+  opacity: 0.85;
+}
+
+.pendingNote {
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  color: var(--gray);
+}
+
+.removalToast {
+  margin: 0.25rem 0 0;
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.95rem;
+  border-radius: var(--radius-pill);
+  background: var(--ink-2);
+  color: var(--cream);
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+.removalCard {
+  margin: 0.75rem 12px 0.75rem 0;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 12px 12px 0 var(--navy);
+}
+
+.removalTitle {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(1.35rem, 2.2vw, 1.8rem);
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.removalRadios {
+  margin-top: 1rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+}
+
+.removalRadioItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-family: var(--font-body);
+  font-size: 0.90625rem;
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.removalRadioItem input {
+  accent-color: var(--maroon);
+  cursor: pointer;
+}
+
+.removalField {
+  margin-top: 1.15rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.removalLabel {
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+.removalTextarea {
+  width: 100%;
+  height: 80px;
+  resize: vertical;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  outline: none;
+}
+
+.removalTextarea:focus {
+  border-color: var(--maroon);
+}
+
+.removalActions {
+  margin-top: 1.25rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.modalConfirm:disabled {
+  cursor: not-allowed;
+  opacity: 0.75;
+}
+
 .reportLink {
   padding: 0;
   border: 0;
@@ -402,6 +539,93 @@
 }
 
 .submitBtn:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(11, 7, 5, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+}
+
+.modalCard {
+  width: min(100%, 520px);
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 24px;
+  box-shadow: 12px 12px 0 var(--maroon);
+  padding: 2rem 2.25rem;
+}
+
+.modalEyebrow {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--maroon);
+}
+
+.modalTitle {
+  margin: 0.55rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(1.5rem, 2.4vw, 2rem);
+  line-height: 1.08;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.modalText {
+  margin: 0.75rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  color: var(--gray);
+}
+
+.modalActions {
+  margin-top: 1.65rem;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.75rem;
+}
+
+.modalCancel,
+.modalConfirm {
+  height: 2.55rem;
+  padding: 0 1.45rem;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.modalCancel {
+  border: 2px solid var(--ink);
+  background: transparent;
+  color: var(--ink);
+}
+
+.modalConfirm {
+  border: 2px solid var(--maroon);
+  background: var(--maroon);
+  color: var(--cream);
+  box-shadow: var(--shadow-pill);
+}
+
+.modalCancel:focus-visible,
+.modalConfirm:focus-visible {
   outline: 2px solid var(--orange);
   outline-offset: 2px;
 }

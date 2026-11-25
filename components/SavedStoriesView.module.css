@@ -40,6 +40,13 @@
   gap: clamp(1.5rem, 3.05vw, 2.75rem); /* ~44px @1440 */
 }
 
+.empty {
+  margin: clamp(1.75rem, 2.8vw, 2.5rem) 0 0;
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  color: var(--gray);
+}
+
 @media (max-width: 900px) {
   .grid {
     grid-template-columns: 1fr;

@@ -1,8 +1,20 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { getStoryEdit } from "@/src/data/storyEdits";
+import { getSession } from "@/src/data/session";
+import {
+  canDelete,
+  deletePost,
+  getPostById,
+  hoursLeft,
+  listRemovalRequests,
+  requestRemoval,
+  type PostStatus,
+  type RemovalReason,
+} from "@/lib/store";
 import styles from "./StoryDetailView.module.css";
 
 type ReplyItem = {
@@ -50,10 +62,13 @@ const INITIAL_COMMENTS: CommentItem[] = [
 ];
 
 type Props = {
+  postId: string;
   slug: string;
   title: string;
   author: string;
   authorSlug: string;
+  status: PostStatus;
+  publishedAt: string | null;
 };
 
 const DEFAULT_PARAGRAPHS = [
@@ -61,7 +76,16 @@ const DEFAULT_PARAGRAPHS = [
   "Inkuru n'ibitekerezo by'abakurambere bigaragaza ko ubutwari bwe butari bushingiye ku rugamba gusa, ahubwo no ku buhanga bwo kunga imiryango, kubaka ubufatanye n'ibiganiro by'umuco byasigaye mu migani n'indirimbo kugeza uyu munsi.",
 ];
 
-export default function StoryDetailView({ slug, title, author, authorSlug }: Props) {
+export default function StoryDetailView({
+  postId,
+  slug,
+  title,
+  author,
+  authorSlug,
+  status,
+  publishedAt,
+}: Props) {
+  const router = useRouter();
   const [displayTitle, setDisplayTitle] = useState(title);
   const [paragraphs, setParagraphs] = useState<string[]>(DEFAULT_PARAGRAPHS);
   const [updatedLabel, setUpdatedLabel] = useState(
@@ -73,6 +97,20 @@ export default function StoryDetailView({ slug, title, author, authorSlug }: Pro
   const [reported, setReported] = useState(false);
   const [comments, setComments] = useState<CommentItem[]>(INITIAL_COMMENTS);
   const [draft, setDraft] = useState("");
+  const [isAuthor, setIsAuthor] = useState(false);
+  const [liveStatus, setLiveStatus] = useState<PostStatus>(status);
+  const [deletable, setDeletable] = useState(false);
+  const [remainingHours, setRemainingHours] = useState(0);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [hasPendingRemoval, setHasPendingRemoval] = useState(false);
+  const [removalCardOpen, setRemovalCardOpen] = useState(false);
+  const [removalReason, setRemovalReason] = useState<RemovalReason | "">("");
+  const [removalNote, setRemovalNote] = useState("");
+  const [removalToast, setRemovalToast] = useState(false);
+
+  const deleteTriggerRef = useRef<HTMLButtonElement | null>(null);
+  const cancelBtnRef = useRef<HTMLButtonElement | null>(null);
+  const confirmBtnRef = useRef<HTMLButtonElement | null>(null);
 
   useEffect(() => {
     const stored = getStoryEdit(slug);
@@ -85,7 +123,91 @@ export default function StoryDetailView({ slug, title, author, authorSlug }: Pro
       if (nextParas.length > 0) setParagraphs(nextParas);
       setUpdatedLabel(stored.updatedLabel);
     }
-  }, [slug]);
+
+    const session = getSession();
+    const viewerSlug = session
+      ? session.displayName.toLowerCase().replace(/\s+/g, "-")
+      : "kalisa-mugisha";
+    const matchesAuthor =
+      viewerSlug === authorSlug ||
+      authorSlug.startsWith(viewerSlug) ||
+      (session?.displayName.toLowerCase() === author.toLowerCase());
+    setIsAuthor(matchesAuthor);
+
+    const storePost = getPostById(postId) ?? { status, publishedAt };
+    setLiveStatus(storePost.status);
+    const allowDelete = canDelete(storePost);
+    setDeletable(allowDelete);
+    setRemainingHours(hoursLeft(storePost));
+
+    const pending = listRemovalRequests().some(
+      (r) =>
+        r.status === "pending" && (r.postId === postId || r.postId === slug)
+    );
+    setHasPendingRemoval(pending);
+  }, [slug, postId, author, authorSlug, status, publishedAt]);
+
+  useEffect(() => {
+    if (!deleteModalOpen) return;
+    cancelBtnRef.current?.focus();
+
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        setDeleteModalOpen(false);
+        deleteTriggerRef.current?.focus();
+        return;
+      }
+      if (e.key === "Tab") {
+        const focusables = [cancelBtnRef.current, confirmBtnRef.current].filter(
+          Boolean
+        ) as HTMLButtonElement[];
+        if (focusables.length === 0) return;
+        const first = focusables[0];
+        const last = focusables[focusables.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
+    }
+
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [deleteModalOpen]);
+
+  function closeDeleteModal() {
+    setDeleteModalOpen(false);
+    deleteTriggerRef.current?.focus();
+  }
+
+  function handleConfirmDelete() {
+    deletePost(postId);
+    setDeleteModalOpen(false);
+    router.push("/ibyo-nabitse");
+  }
+
+  function handleRemovalSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!removalReason) return;
+    requestRemoval({
+      postId,
+      reason: removalReason,
+      note: removalNote,
+    });
+    setHasPendingRemoval(true);
+    setRemovalCardOpen(false);
+    setRemovalReason("");
+    setRemovalNote("");
+    setRemovalToast(true);
+    setTimeout(() => setRemovalToast(false), 3000);
+  }
+
+  const canRequestRemoval =
+    isAuthor && !deletable && liveStatus === "published";
 
   const totalCount = comments.reduce(
     (sum, c) => sum + (c.deleted ? 0 : 1) + c.replies.length,
@@ -160,28 +282,142 @@ export default function StoryDetailView({ slug, title, author, authorSlug }: Pro
           >
             {copied ? "Ibyakoporowe ✓" : "Kopora ihuzo"}
           </button>
-          <button
-            type="button"
-            className={`${styles.pill} ${styles.pillMaroon}`}
-            aria-pressed={following}
-            onClick={() => setFollowing((prev) => !prev)}
-          >
-            {following ? "Uramukurikira" : "Kurikira Umwanditsi"}
-          </button>
+          {isAuthor && deletable ? (
+            <button
+              ref={deleteTriggerRef}
+              type="button"
+              className={`${styles.pill} ${styles.pillMaroonOutline}`}
+              onClick={() => setDeleteModalOpen(true)}
+            >
+              Siba inyandiko
+            </button>
+          ) : null}
+          {!isAuthor ? (
+            <button
+              type="button"
+              className={`${styles.pill} ${styles.pillMaroon}`}
+              aria-pressed={following}
+              onClick={() => setFollowing((prev) => !prev)}
+            >
+              {following ? "Uramukurikira" : "Kurikira Umwanditsi"}
+            </button>
+          ) : null}
         </div>
 
-        <button
-          type="button"
-          className={styles.reportLink}
-          onClick={() => setReported(true)}
-        >
-          {reported
-            ? "Ikibazo cyamenyeshejwe ✓"
-            : "Menyesha ikibazo kuri iyi nyandiko"}
-        </button>
+        {canRequestRemoval ? (
+          hasPendingRemoval ? (
+            <span className={styles.pendingNote}>
+              Ubusabe bwawe buracyasuzumwa.
+            </span>
+          ) : (
+            <button
+              type="button"
+              className={styles.removalLink}
+              onClick={() => setRemovalCardOpen((prev) => !prev)}
+            >
+              Saba gukuraho inyandiko
+            </button>
+          )
+        ) : !isAuthor ? (
+          <button
+            type="button"
+            className={styles.reportLink}
+            onClick={() => setReported(true)}
+          >
+            {reported
+              ? "Ikibazo cyamenyeshejwe ✓"
+              : "Menyesha ikibazo kuri iyi nyandiko"}
+          </button>
+        ) : null}
       </div>
 
       <hr className={styles.rule} />
+
+      {isAuthor && deletable ? (
+        <p className={styles.graceNote}>
+          Ushobora kuyisiba mu masaha {remainingHours} asigaye.
+        </p>
+      ) : null}
+
+      {removalToast ? (
+        <p className={styles.removalToast} role="status" aria-live="polite">
+          Ubusabe bwawe bwoherejwe
+        </p>
+      ) : null}
+
+      {canRequestRemoval && !hasPendingRemoval && removalCardOpen ? (
+        <form
+          className={styles.removalCard}
+          onSubmit={handleRemovalSubmit}
+          noValidate
+        >
+          <h2 className={styles.removalTitle}>
+            Kuki ushaka gukuraho iyi nyandiko?
+          </h2>
+
+          <div className={styles.removalRadios} role="radiogroup" aria-label="Impamvu">
+            <label className={styles.removalRadioItem}>
+              <input
+                type="radio"
+                name="removal-reason"
+                value="ikosa"
+                checked={removalReason === "ikosa"}
+                onChange={() => setRemovalReason("ikosa")}
+              />
+              <span>Ikosa ryanjye</span>
+            </label>
+            <label className={styles.removalRadioItem}>
+              <input
+                type="radio"
+                name="removal-reason"
+                value="amakuru-bwite"
+                checked={removalReason === "amakuru-bwite"}
+                onChange={() => setRemovalReason("amakuru-bwite")}
+              />
+              <span>Amakuru bwite</span>
+            </label>
+            <label className={styles.removalRadioItem}>
+              <input
+                type="radio"
+                name="removal-reason"
+                value="ikindi"
+                checked={removalReason === "ikindi"}
+                onChange={() => setRemovalReason("ikindi")}
+              />
+              <span>Ikindi</span>
+            </label>
+          </div>
+
+          <div className={styles.removalField}>
+            <label htmlFor="removal-note" className={styles.removalLabel}>
+              IBINDI BISOBANURO (BITARI ITEGEKO)
+            </label>
+            <textarea
+              id="removal-note"
+              className={styles.removalTextarea}
+              value={removalNote}
+              onChange={(e) => setRemovalNote(e.target.value)}
+            />
+          </div>
+
+          <div className={styles.removalActions}>
+            <button
+              type="button"
+              className={styles.modalCancel}
+              onClick={() => setRemovalCardOpen(false)}
+            >
+              Hagarika
+            </button>
+            <button
+              type="submit"
+              className={styles.modalConfirm}
+              disabled={!removalReason}
+            >
+              Ohereza ubusabe
+            </button>
+          </div>
+        </form>
+      ) : null}
 
       <div className={styles.bodyGrid}>
         <div className={styles.prose}>
@@ -306,6 +542,48 @@ export default function StoryDetailView({ slug, title, author, authorSlug }: Pro
           </button>
         </form>
       </section>
+
+      {deleteModalOpen ? (
+        <div
+          className={styles.modalOverlay}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeDeleteModal();
+          }}
+        >
+          <div
+            className={styles.modalCard}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="delete-modal-title"
+          >
+            <p className={styles.modalEyebrow}>SIBA INYANDIKO</p>
+            <h2 id="delete-modal-title" className={styles.modalTitle}>
+              Siba inyandiko burundu?
+            </h2>
+            <p className={styles.modalText}>
+              Iyi nyandiko izavanwaho burundu. Ntibishoboka kuyigarura.
+            </p>
+            <div className={styles.modalActions}>
+              <button
+                ref={cancelBtnRef}
+                type="button"
+                className={styles.modalCancel}
+                onClick={closeDeleteModal}
+              >
+                Hagarika
+              </button>
+              <button
+                ref={confirmBtnRef}
+                type="button"
+                className={styles.modalConfirm}
+                onClick={handleConfirmDelete}
+              >
+                Siba inyandiko
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </article>
   );
 }

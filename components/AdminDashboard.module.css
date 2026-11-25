@@ -198,6 +198,113 @@
   margin-top: 2.5rem;
 }
 
+.removalCard {
+  margin-top: 1.5rem;
+  background: var(--admin-card);
+  border-radius: 20px;
+  border-top: 5px solid var(--orange);
+  padding: 1.5rem 1.75rem;
+}
+
+.removalHeading {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(1.35rem, 2vw, 1.75rem);
+  letter-spacing: -0.02em;
+  color: var(--cream);
+}
+
+.removalList {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.removalRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem 1.25rem;
+  padding: 1rem 0;
+  border-top: 1px solid #3a2d25;
+}
+
+.removalRow:first-child {
+  border-top: 0;
+  padding-top: 0.35rem;
+}
+
+.removalRow:last-child {
+  padding-bottom: 0.15rem;
+}
+
+.removalInfo {
+  min-width: 0;
+  flex: 1 1 260px;
+}
+
+.removalTitle {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 1.125rem; /* 18px */
+  font-weight: 700;
+  line-height: 1.3;
+  color: var(--cream);
+}
+
+.removalMeta {
+  margin: 0.25rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: rgba(245, 235, 220, 0.62);
+}
+
+.removalActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.removalPillOrange,
+.removalPillOutline {
+  height: 2.75rem; /* 44px */
+  padding: 0 1.35rem;
+  border-radius: var(--radius-pill);
+  font-family: var(--font-body);
+  font-size: 0.84375rem;
+  font-weight: 700;
+  cursor: pointer;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.removalPillOrange {
+  border: 1.5px solid var(--orange);
+  background: var(--orange);
+  color: var(--ink);
+}
+
+.removalPillOutline {
+  border: 1.5px solid rgba(245, 235, 220, 0.82);
+  background: transparent;
+  color: var(--cream);
+}
+
+.removalPillOrange:hover,
+.removalPillOutline:hover {
+  opacity: 0.9;
+}
+
+.removalEmpty {
+  margin: 1rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.90625rem;
+  color: rgba(245, 235, 220, 0.6);
+}
+
 .sectionHeader {
   display: flex;
   flex-wrap: wrap;

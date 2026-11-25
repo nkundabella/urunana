@@ -1,10 +1,24 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
 import WovenStrip from "./WovenStrip";
+import {
+  getPostById,
+  listRemovalRequests,
+  resolveRequest,
+  type RemovalAction,
+  type RemovalReason,
+  type RemovalRequest,
+} from "@/lib/store";
 import styles from "./AdminDashboard.module.css";
+
+const REASON_LABELS: Record<RemovalReason, string> = {
+  ikosa: "Ikosa ryanjye",
+  "amakuru-bwite": "Amakuru bwite",
+  ikindi: "Ikindi",
+};
 
 type PeriodId = "7d" | "30d" | "all";
 type MainTab = "incamake" | "kugenzura" | "abakoresha" | "igenamiterere";
@@ -159,6 +173,41 @@ export default function AdminDashboard() {
   ]);
   const [codesUsed, setCodesUsed] = useState(0);
   const [threshold, setThreshold] = useState(3);
+  const [removalRequests, setRemovalRequests] = useState<
+    Array<RemovalRequest & { postTitle: string; postAuthor: string }>
+  >([]);
+
+  function refreshRemovalRequests() {
+    const pending = listRemovalRequests()
+      .filter((r) => r.status === "pending")
+      .map((r) => {
+        const post = getPostById(r.postId);
+        return {
+          ...r,
+          postTitle: post?.title ?? r.postId,
+          postAuthor: post?.author ?? "Umwanditsi",
+        };
+      });
+    setRemovalRequests(pending);
+  }
+
+  useEffect(() => {
+    refreshRemovalRequests();
+  }, []);
+
+  function handleResolveRemoval(id: string, action: RemovalAction) {
+    if (action === "siba") {
+      const ok = window.confirm(
+        "Siba iyi nyandiko burundu? Ntibishoboka kuyigarura."
+      );
+      if (!ok) return;
+    }
+    resolveRequest(id, action);
+    refreshRemovalRequests();
+  }
+
+  const baseQueueCount = queue.filter((q) => q.bucket !== "done").length + 1;
+  const moderationTotal = baseQueueCount + removalRequests.length;
 
   function resolveItem(id: string) {
     setQueue((prev) =>
@@ -229,7 +278,7 @@ export default function AdminDashboard() {
               className={`${styles.pill}${activeTab === "kugenzura" ? ` ${styles.pillActive}` : ""}`}
               onClick={() => setActiveTab("kugenzura")}
             >
-              Kugenzura &middot; 7
+              Kugenzura &middot; {moderationTotal}
             </button>
             <button
               type="button"
@@ -292,6 +341,60 @@ export default function AdminDashboard() {
                 ))}
               </section>
             </>
+          )}
+
+          {activeTab === "kugenzura" && (
+            <section
+              className={styles.removalCard}
+              aria-labelledby="removal-requests-heading"
+            >
+              <h2 id="removal-requests-heading" className={styles.removalHeading}>
+                Ubusabe bwo gukuraho
+              </h2>
+
+              {removalRequests.length > 0 ? (
+                <div className={styles.removalList}>
+                  {removalRequests.map((req) => (
+                    <div key={req.id} className={styles.removalRow}>
+                      <div className={styles.removalInfo}>
+                        <p className={styles.removalTitle}>{req.postTitle}</p>
+                        <p className={styles.removalMeta}>
+                          {req.postAuthor} &middot;{" "}
+                          {REASON_LABELS[req.reason] ?? req.reason}
+                        </p>
+                      </div>
+                      <div className={styles.removalActions}>
+                        <button
+                          type="button"
+                          className={styles.removalPillOrange}
+                          onClick={() => handleResolveRemoval(req.id, "emeza")}
+                        >
+                          Emeza
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.removalPillOutline}
+                          onClick={() => handleResolveRemoval(req.id, "siba")}
+                        >
+                          Siba burundu
+                        </button>
+                        <button
+                          type="button"
+                          className={styles.removalPillOutline}
+                          onClick={() =>
+                            handleResolveRemoval(req.id, "hagarika")
+                          }
+                        >
+                          Hagarika
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className={styles.removalEmpty}>Nta busabe buhari.</p>
+              )}
+            </section>
           )}
 
           {showQueue && (
