@@ -5,10 +5,11 @@ import styles from "./PageHero.module.css";
 type Props = {
   eyebrow: string;
   title: ReactNode;
+  notice?: string;
   lead: string;
 };
 
-export default function PageHero({ eyebrow, title, lead }: Props) {
+export default function PageHero({ eyebrow, title, notice, lead }: Props) {
   return (
     <section className={styles.hero}>
       <div className={styles.body}>
@@ -23,6 +24,11 @@ export default function PageHero({ eyebrow, title, lead }: Props) {
         <div className={styles.inner}>
           <p className={styles.eyebrow}>{eyebrow}</p>
           <h1 className={styles.title}>{title}</h1>
+          {notice ? (
+            <div className={styles.notice} role="status">
+              {notice}
+            </div>
+          ) : null}
           <p className={styles.lead}>{lead}</p>
         </div>
       </div>

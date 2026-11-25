@@ -1,7 +1,8 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
+import { getStoryEdit } from "@/src/data/storyEdits";
 import styles from "./StoryDetailView.module.css";
 
 type ReplyItem = {
@@ -49,18 +50,42 @@ const INITIAL_COMMENTS: CommentItem[] = [
 ];
 
 type Props = {
+  slug: string;
   title: string;
   author: string;
   authorSlug: string;
 };
 
-export default function StoryDetailView({ title, author, authorSlug }: Props) {
+const DEFAULT_PARAGRAPHS = [
+  "Mu mateka y'u Rwanda rwo hambere, Umwami Ruganzu II Ndoli yibukwa nk'intwari yagaruye ingoma nyuma y'imyaka myinshi y'akaga n'amacakubiri. Avuye i Karagwe aho yari yarahungiye kwa nyirasenge Nyabunyana, yagarutse mu Rwanda afite icyerekezo cyo kongera guhuza abaturage.",
+  "Inkuru n'ibitekerezo by'abakurambere bigaragaza ko ubutwari bwe butari bushingiye ku rugamba gusa, ahubwo no ku buhanga bwo kunga imiryango, kubaka ubufatanye n'ibiganiro by'umuco byasigaye mu migani n'indirimbo kugeza uyu munsi.",
+];
+
+export default function StoryDetailView({ slug, title, author, authorSlug }: Props) {
+  const [displayTitle, setDisplayTitle] = useState(title);
+  const [paragraphs, setParagraphs] = useState<string[]>(DEFAULT_PARAGRAPHS);
+  const [updatedLabel, setUpdatedLabel] = useState(
+    "Yavuguruwe ku wa 18 Ukwakira 2026"
+  );
   const [saved, setSaved] = useState(false);
   const [copied, setCopied] = useState(false);
   const [following, setFollowing] = useState(false);
   const [reported, setReported] = useState(false);
   const [comments, setComments] = useState<CommentItem[]>(INITIAL_COMMENTS);
   const [draft, setDraft] = useState("");
+
+  useEffect(() => {
+    const stored = getStoryEdit(slug);
+    if (stored) {
+      setDisplayTitle(stored.title);
+      const nextParas = stored.body
+        .split(/\n{2,}/)
+        .map((p) => p.trim())
+        .filter(Boolean);
+      if (nextParas.length > 0) setParagraphs(nextParas);
+      setUpdatedLabel(stored.updatedLabel);
+    }
+  }, [slug]);
 
   const totalCount = comments.reduce(
     (sum, c) => sum + (c.deleted ? 0 : 1) + c.replies.length,
@@ -106,16 +131,14 @@ export default function StoryDetailView({ title, author, authorSlug }: Props) {
         </span>
       </div>
 
-      <h1 className={styles.title}>{title}</h1>
+      <h1 className={styles.title}>{displayTitle}</h1>
 
       <div className={styles.meta}>
         <Link href={`/umwirondoro/${authorSlug}`} className={styles.authorLink}>
           {author}
         </Link>
         <span className={styles.metaDate}>Yatangiweho: 14 Ukwakira 2026</span>
-        <span className={styles.updatedPill}>
-          Yavuguruwe ku wa 18 Ukwakira 2026
-        </span>
+        <span className={styles.updatedPill}>{updatedLabel}</span>
       </div>
 
       <hr className={styles.rule} />
@@ -162,19 +185,9 @@ export default function StoryDetailView({ title, author, authorSlug }: Props) {
 
       <div className={styles.bodyGrid}>
         <div className={styles.prose}>
-          <p>
-            Mu mateka y&apos;u Rwanda rwo hambere, Umwami Ruganzu II Ndoli
-            yibukwa nk&apos;intwari yagaruye ingoma nyuma y&apos;imyaka myinshi
-            y&apos;akaga n&apos;amacakubiri. Avuye i Karagwe aho yari
-            yarahungiye kwa nyirasenge Nyabunyana, yagarutse mu Rwanda afite
-            icyerekezo cyo kongera guhuza abaturage.
-          </p>
-          <p>
-            Inkuru n&apos;ibitekerezo by&apos;abakurambere bigaragaza ko
-            ubutwari bwe butari bushingiye ku rugamba gusa, ahubwo no ku
-            buhanga bwo kunga imiryango, kubaka ubufatanye n&apos;ibiganiro
-            by&apos;umuco byasigaye mu migani n&apos;indirimbo kugeza uyu munsi.
-          </p>
+          {paragraphs.map((text, idx) => (
+            <p key={idx}>{text}</p>
+          ))}
         </div>
 
         <figure className={styles.archFigure}>

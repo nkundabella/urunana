@@ -36,6 +36,7 @@ export default async function StoryDetailPage({ params }: Props) {
       <div className={styles.patternBand} aria-hidden="true" />
       <main className={styles.main}>
         <StoryDetailView
+          slug={story.slug}
           title={story.title}
           author={story.author}
           authorSlug={authorSlug}

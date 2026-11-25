@@ -38,6 +38,19 @@
   color: var(--cream);
 }
 
+.notice {
+  margin-top: 1rem;
+  background: var(--ink-2);
+  border-top: 6px solid var(--orange);
+  border-radius: 16px;
+  padding: 0.95rem 1.35rem;
+  font-family: var(--font-body);
+  font-size: clamp(0.875rem, 1.25vw, 1.0625rem);
+  line-height: 1.45;
+  color: var(--cream);
+  box-shadow: 0 12px 28px rgba(11, 7, 5, 0.25);
+}
+
 .lead {
   margin: 0.75rem 0 0;
   max-width: 27.5rem; /* 440px */

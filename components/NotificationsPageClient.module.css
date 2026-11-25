@@ -1,0 +1,130 @@
+.page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--cream);
+}
+
+.main {
+  flex: 1;
+  width: 100%;
+  padding: 2rem 1.5rem 3.5rem;
+}
+
+.container {
+  width: min(100%, 740px);
+  margin-inline: auto;
+}
+
+.eyebrow {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.24em;
+  text-transform: uppercase;
+  color: var(--maroon);
+}
+
+.title {
+  margin: 0.45rem 0 0;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(1.85rem, 3vw, 2.5rem);
+  line-height: 1.05;
+  letter-spacing: -0.025em;
+  color: var(--ink);
+}
+
+.list {
+  margin-top: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  padding-right: 10px; /* accommodates hard offset shadow without overflow */
+}
+
+.card {
+  --accent: var(--orange);
+  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  text-align: left;
+  background: var(--paper);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  box-shadow: 10px 10px 0 var(--accent);
+  padding: 1.25rem 1.45rem;
+  cursor: pointer;
+  transition: transform 0.14s ease;
+}
+
+.card:hover {
+  transform: translateY(-1px);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 3px;
+}
+
+.tone_orange {
+  --accent: var(--orange);
+}
+
+.tone_navy {
+  --accent: var(--navy);
+}
+
+.tone_red {
+  --accent: var(--red);
+}
+
+.tone_maroon {
+  --accent: var(--maroon);
+}
+
+.dot {
+  margin-top: 0.2rem;
+  width: 1.15rem; /* ~18–20px */
+  height: 1.15rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  background: var(--accent);
+  border: 2.5px solid var(--accent);
+  transition: background-color 0.18s ease;
+}
+
+.dotRead {
+  background: transparent;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
+.cardTitle {
+  font-family: var(--font-body);
+  font-size: clamp(0.95rem, 1.3vw, 1.125rem);
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ink);
+}
+
+.cardSub {
+  font-family: var(--font-body);
+  font-size: 0.84375rem;
+  font-weight: 400;
+  line-height: 1.4;
+  color: var(--gray);
+}
+
+@media (max-width: 900px) {
+  .main {
+    padding: 1.5rem 1.25rem 2.75rem;
+  }
+}

@@ -5,6 +5,7 @@ export type HeaderVariant = "A" | "B" | "C";
 
 type Props = {
   variant?: HeaderVariant;
+  notificationCount?: number;
 };
 
 const NAV = [
@@ -13,7 +14,7 @@ const NAV = [
   { href: "/ibyo-nabitse", label: "Ibyo Nabitse" },
 ];
 
-export default function Header({ variant = "C" }: Props) {
+export default function Header({ variant = "C", notificationCount = 2 }: Props) {
   return (
     <header className={styles.header}>
       <div className={`${styles.inner}${variant === "A" ? ` ${styles.innerA}` : ""}`}>
@@ -59,9 +60,9 @@ export default function Header({ variant = "C" }: Props) {
               <Link href="/kwandika" className={styles.pillAccent}>
                 Kwandika
               </Link>
-              <button type="button" className={styles.bell} aria-label="Ubutumire">
+              <Link href="/imenyesha" className={styles.bell} aria-label="Imenyesha">
                 <BellIcon />
-              </button>
+              </Link>
               <span className={styles.lang}>RW</span>
               <Link href="/umwirondoro" className={styles.avatar} aria-label="Umwirondoro">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -75,10 +76,20 @@ export default function Header({ variant = "C" }: Props) {
               <Link href="/kwandika" className={styles.pillAccent}>
                 Kwandika Inkuru
               </Link>
-              <button type="button" className={styles.bellBadged} aria-label="Ubutumire, 2 bishya">
+              <Link
+                href="/imenyesha"
+                className={styles.bellBadged}
+                aria-label={
+                  notificationCount > 0
+                    ? `Imenyesha, ${notificationCount} bishya`
+                    : "Imenyesha"
+                }
+              >
                 <BellIcon />
-                <span className={styles.badge}>2</span>
-              </button>
+                {notificationCount > 0 ? (
+                  <span className={styles.badge}>{notificationCount}</span>
+                ) : null}
+              </Link>
               <Link href="/umwirondoro" className={styles.avatar} aria-label="Umwirondoro">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src="/assets/blue-baskets.jpg" alt="" />
