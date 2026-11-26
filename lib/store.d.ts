@@ -51,4 +51,18 @@ export function requestRemoval(input: {
   note?: string;
 }): RemovalRequest;
 export function listRemovalRequests(): RemovalRequest[];
+export type ContactMessage = {
+  id: string;
+  name: string;
+  email: string;
+  message: string;
+  createdAt: string;
+};
+
 export function resolveRequest(id: string, action: RemovalAction): RemovalRequest | null;
+export function listContactMessages(): ContactMessage[];
+export function saveContactMessage(input: {
+  name: string;
+  email: string;
+  message: string;
+}): ContactMessage;

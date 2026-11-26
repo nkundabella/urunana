@@ -32,7 +32,7 @@ export default function LoginForm() {
     e.preventDefault();
     if (!validate()) return;
     setSession(identifier.trim());
-    router.push("/ahabanza");
+    router.push("/");
   }
 
   return (

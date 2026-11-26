@@ -8,17 +8,19 @@ type Props = {
   notificationCount?: number;
 };
 
-const NAV = [
-  { href: "/ahabanza", label: "Ahabanza" },
-  { href: "/gushakisha", label: "Gushakisha" },
-  { href: "/ibyo-nabitse", label: "Ibyo Nabitse" },
-];
-
 export default function Header({ variant = "C", notificationCount = 2 }: Props) {
+  const isLoggedInView = variant === "A" || variant === "B";
+  const homeHref = isLoggedInView ? "/" : "/ahabanza";
+  const navItems = [
+    { href: homeHref, label: "Ahabanza" },
+    { href: "/gushakisha", label: "Gushakisha" },
+    { href: "/ibyo-nabitse", label: "Ibyo Nabitse" },
+  ];
+
   return (
     <header className={styles.header}>
       <div className={`${styles.inner}${variant === "A" ? ` ${styles.innerA}` : ""}`}>
-        <Link href="/ahabanza" className={styles.brand}>
+        <Link href={homeHref} className={styles.brand}>
           <span className={styles.logo}>Urunana</span>
           <span className={styles.tagline}>UMUCO N&apos;URURIMI</span>
         </Link>
@@ -35,8 +37,8 @@ export default function Header({ variant = "C", notificationCount = 2 }: Props) 
           <div aria-hidden="true" />
         ) : (
           <nav className={styles.nav} aria-label="Ibiyerekeye">
-            {NAV.map((item) => (
-              <Link key={item.href} href={item.href} className={styles.navLink}>
+            {navItems.map((item) => (
+              <Link key={item.label} href={item.href} className={styles.navLink}>
                 {item.label}
               </Link>
             ))}

@@ -114,7 +114,7 @@ export default function VerifyForm() {
     if (!getSession()) {
       setSession("kalisa@urugero.rw", "kalisa");
     }
-    router.push("/ahabanza");
+    router.push("/");
   }
 
   function handleResend() {

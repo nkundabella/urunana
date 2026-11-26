@@ -14,7 +14,7 @@ export default function KwemezaPage() {
   return (
     <div className={styles.page}>
       <WovenStrip />
-      <Header variant="A" />
+      <Header variant="C" />
       <main className={styles.main}>
         <SplitAuth
           fit
