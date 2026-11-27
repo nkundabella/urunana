@@ -133,6 +133,7 @@
   font-family: var(--font-body);
   font-size: 0.75rem; /* 12px */
   font-weight: 700;
+  text-decoration: none;
   cursor: pointer;
 }
 

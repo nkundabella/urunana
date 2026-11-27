@@ -24,8 +24,8 @@ export async function generateMetadata({ params }: Props) {
 export default async function StoryDetailPage({ params }: Props) {
   const { id } = await params;
   const stories = storiesData as StorePost[];
-  const story =
-    stories.find((s) => s.slug === id || s.id === id) ?? stories[0];
+  const matched = stories.find((s) => s.slug === id || s.id === id);
+  const story = matched ?? stories[0];
 
   const authorSlug = story.authorId || story.author.toLowerCase().replace(/\s+/g, "-");
 
@@ -36,13 +36,16 @@ export default async function StoryDetailPage({ params }: Props) {
       <div className={styles.patternBand} aria-hidden="true" />
       <main className={styles.main}>
         <StoryDetailView
-          postId={story.id}
-          slug={story.slug}
+          routeId={id}
+          postId={matched ? matched.id : id}
+          slug={matched ? matched.slug : id}
           title={story.title}
           author={story.author}
           authorSlug={authorSlug}
           status={story.status}
           publishedAt={story.publishedAt}
+          initialSaved={Boolean(matched?.saved)}
+          initialTags={matched?.tags}
         />
       </main>
       <Footer />

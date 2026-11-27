@@ -33,8 +33,7 @@ export async function generateMetadata({ params }: Props) {
 export default async function HinduraInkuruPage({ params }: Props) {
   const { id } = await params;
   const stories = storiesData as StoryRecord[];
-  const story =
-    stories.find((s) => s.slug === id || s.id === id) ?? stories[0];
+  const matched = stories.find((s) => s.slug === id || s.id === id);
 
   return (
     <div className={styles.page}>
@@ -50,17 +49,21 @@ export default async function HinduraInkuruPage({ params }: Props) {
           lead="Andika inkuru, ijambo cyangwa umugani wumvise mu muryango."
         />
         <PublishEditor
-          storySlug={story.slug}
-          postStatus={story.status ?? "published"}
-          initialValues={{
-            title: story.title,
-            body: DEFAULT_BODY,
-            contentType: "Inkuru (Story)",
-            sources: ["Family story / oral tradition"],
-            topics: ["History & heritage"],
-            language: "Ikinyarwanda",
-          }}
-          submitLabel="Bika impinduka"
+          storySlug={matched ? matched.slug : id}
+          postStatus={matched ? (matched.status ?? "published") : "draft"}
+          initialValues={
+            matched
+              ? {
+                  title: matched.title,
+                  body: DEFAULT_BODY,
+                  contentType: "Inkuru (Story)",
+                  sources: ["Family story / oral tradition"],
+                  topics: ["History & heritage"],
+                  language: "Ikinyarwanda",
+                }
+              : undefined
+          }
+          submitLabel={matched ? "Bika impinduka" : "Tangaza"}
         />
       </main>
       <Footer />

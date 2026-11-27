@@ -1,12 +1,14 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import StoryCard, { type StoryItem } from "./StoryCard";
-import { filterVisiblePosts, type PostStatus } from "@/lib/store";
+import { filterVisiblePosts, getPosts, type PostStatus } from "@/lib/store";
 import styles from "./SearchExplorer.module.css";
 
 export type SearchStory = StoryItem & {
   feed?: boolean;
+  category?: string;
   topic?: string;
   type?: string;
   source?: string;
@@ -16,6 +18,14 @@ export type SearchStory = StoryItem & {
 };
 
 type FilterKey = "topic" | "type" | "source" | "language";
+
+const TOPIC_SLUG_MAP: Record<string, string> = {
+  "amateka-n-umurage": "Amateka n'Umurage",
+  "ururimi-rw-ikinyarwanda": "Ururimi rw'Ikinyarwanda",
+  "imigani-n-ibisakuzo": "Imigani n'Ibisakuzo",
+  "ubuvanganzo-n-inkuru": "Ubuvanganzo n'Inkuru",
+  "imigenzo-gakondo": "Imigenzo Gakondo",
+};
 
 const FILTER_GROUPS: {
   key: FilterKey;
@@ -29,6 +39,8 @@ const FILTER_GROUPS: {
       "Amateka n'Umurage",
       "Ururimi rw'Ikinyarwanda",
       "Imigani n'Ibisakuzo",
+      "Ubuvanganzo n'Inkuru",
+      "Imigenzo Gakondo",
     ],
   },
   {
@@ -48,19 +60,54 @@ const FILTER_GROUPS: {
   },
 ];
 
+function resolveTopicParam(raw: string | null): string | null {
+  if (!raw) return null;
+  const trimmed = raw.trim();
+  if (!trimmed) return null;
+  const lower = trimmed.toLowerCase();
+  if (TOPIC_SLUG_MAP[lower]) return TOPIC_SLUG_MAP[lower];
+  const exact = FILTER_GROUPS[0].options.find(
+    (opt) => opt.toLowerCase() === lower
+  );
+  return exact ?? null;
+}
+
 type Props = {
   stories: SearchStory[];
 };
 
 export default function SearchExplorer({ stories }: Props) {
-  const [queryInput, setQueryInput] = useState("");
-  const [appliedQuery, setAppliedQuery] = useState("");
+  const searchParams = useSearchParams();
+  const urlQ = searchParams.get("q") ?? "";
+  const urlTopic = resolveTopicParam(searchParams.get("topic"));
+
+  const [allStories, setAllStories] = useState<SearchStory[]>(stories);
+  const [queryInput, setQueryInput] = useState(urlQ);
+  const [appliedQuery, setAppliedQuery] = useState(urlQ.trim());
   const [selected, setSelected] = useState<Record<FilterKey, string[]>>({
-    topic: [],
+    topic: urlTopic ? [urlTopic] : [],
     type: [],
     source: [],
     language: [],
   });
+
+  useEffect(() => {
+    setAllStories(getPosts() as SearchStory[]);
+  }, []);
+
+  useEffect(() => {
+    setQueryInput(urlQ);
+    setAppliedQuery(urlQ.trim());
+  }, [urlQ]);
+
+  useEffect(() => {
+    if (urlTopic) {
+      setSelected((prev) => ({
+        ...prev,
+        topic: [urlTopic],
+      }));
+    }
+  }, [urlTopic]);
 
   function toggleFilter(key: FilterKey, option: string) {
     setSelected((prev) => {
@@ -90,8 +137,8 @@ export default function SearchExplorer({ stories }: Props) {
     Object.values(selected).some((arr) => arr.length > 0);
 
   const results = useMemo(() => {
-    const visible = filterVisiblePosts(stories);
-    const base = hasFilters ? visible : visible.filter((s) => s.feed);
+    const visible = filterVisiblePosts(allStories);
+    const base = hasFilters ? visible : visible.filter((s) => s.feed !== false);
     const q = appliedQuery.toLowerCase();
 
     return base.filter((story) => {
@@ -105,14 +152,37 @@ export default function SearchExplorer({ stories }: Props) {
       for (const group of FILTER_GROUPS) {
         const picks = selected[group.key];
         if (picks.length > 0) {
-          const val = story[group.key];
-          if (!val || !picks.includes(val)) return false;
+          if (group.key === "topic") {
+            const matchedTopic = picks.some((pick) => {
+              if (story.topic === pick || story.category === pick) return true;
+              if (
+                pick === "Ururimi rw'Ikinyarwanda" &&
+                story.category === "Ururimi"
+              ) {
+                return true;
+              }
+              if (
+                pick === "Ubuvanganzo n'Inkuru" &&
+                (story.type === "Inkuru" ||
+                  story.tags.some((t) =>
+                    t.label.toLowerCase().includes("ubuvanganzo")
+                  ))
+              ) {
+                return true;
+              }
+              return false;
+            });
+            if (!matchedTopic) return false;
+          } else {
+            const val = story[group.key];
+            if (!val || !picks.includes(val)) return false;
+          }
         }
       }
 
       return true;
     });
-  }, [stories, hasFilters, appliedQuery, selected]);
+  }, [allStories, hasFilters, appliedQuery, selected]);
 
   return (
     <div className={styles.container}>
@@ -170,7 +240,12 @@ export default function SearchExplorer({ stories }: Props) {
           {results.length > 0 ? (
             <div className={styles.list}>
               {results.map((story) => (
-                <StoryCard key={story.id} story={story} variant="wide" />
+                <StoryCard
+                  key={story.id}
+                  story={story}
+                  variant="wide"
+                  href={`/inkuru/${story.slug || story.id}`}
+                />
               ))}
             </div>
           ) : (

@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
+import Link from "next/link";
 import StoryCard, { type StoryItem } from "./StoryCard";
-import { filterVisiblePosts, type PostStatus } from "@/lib/store";
+import { filterVisiblePosts, getPosts, type PostStatus } from "@/lib/store";
 import styles from "./FeedContent.module.css";
 
 type FeedStory = StoryItem & {
   feed?: boolean;
   category?: string;
+  topic?: string;
   status?: PostStatus;
   authorId?: string;
 };
@@ -26,12 +28,23 @@ const CATEGORIES = [
 
 export default function FeedContent({ stories }: Props) {
   const [activeCategory, setActiveCategory] = useState<string>("Zose");
+  const [allStories, setAllStories] = useState<FeedStory[]>(stories);
 
-  const publicStories = filterVisiblePosts(stories);
+  useEffect(() => {
+    setAllStories(getPosts() as FeedStory[]);
+  }, []);
+
+  const publicStories = filterVisiblePosts(allStories);
   const visibleStories =
     activeCategory === "Zose"
-      ? publicStories.filter((s) => s.feed)
-      : publicStories.filter((s) => s.category === activeCategory);
+      ? publicStories.filter((s) => s.feed !== false)
+      : publicStories.filter(
+          (s) =>
+            s.category === activeCategory ||
+            (activeCategory === "Ururimi" &&
+              s.topic === "Ururimi rw'Ikinyarwanda") ||
+            s.topic === activeCategory
+        );
 
   return (
     <div className={styles.container}>
@@ -64,7 +77,11 @@ export default function FeedContent({ stories }: Props) {
 
           <div className={styles.storyList}>
             {visibleStories.map((story) => (
-              <StoryCard key={story.id} story={story} />
+              <StoryCard
+                key={story.id}
+                story={story}
+                href={`/inkuru/${story.slug || story.id}`}
+              />
             ))}
           </div>
         </section>
@@ -75,9 +92,9 @@ export default function FeedContent({ stories }: Props) {
             <p className={styles.featuredPrompt}>
               Ikiganiro cy&apos;icyumweru: [ikibazo cy&apos;umuco]
             </p>
-            <button type="button" className={styles.featuredBtn}>
+            <Link href="/kwandika" className={styles.featuredBtn}>
               Subiza
-            </button>
+            </Link>
           </div>
 
           <div className={styles.authorCard}>

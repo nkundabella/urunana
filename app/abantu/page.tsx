@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WovenStrip from "@/components/WovenStrip";
@@ -18,7 +19,9 @@ export default function AbantuPage() {
         <div className={styles.container}>
           <p className={styles.eyebrow}>KALISA MUGISHA</p>
           <h1 className={styles.title}>Abantu</h1>
-          <PeopleListView />
+          <Suspense fallback={null}>
+            <PeopleListView />
+          </Suspense>
         </div>
       </main>
       <Footer />

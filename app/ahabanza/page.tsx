@@ -11,11 +11,31 @@ export const metadata = {
 };
 
 const CATEGORIES = [
-  { label: "Amateka\nn'Umurage", cropClass: styles.catCrop1 },
-  { label: "Ururimi\nrw'Ikinyarwanda", cropClass: styles.catCrop2 },
-  { label: "Imigani\nn'Ibisakuzo", cropClass: styles.catCrop3 },
-  { label: "Ubuvanganzo\nn'Inkuru", cropClass: styles.catCrop4 },
-  { label: "Imigenzo\nGakondo", cropClass: styles.catCrop5 },
+  {
+    label: "Amateka\nn'Umurage",
+    slug: "amateka-n-umurage",
+    cropClass: styles.catCrop1,
+  },
+  {
+    label: "Ururimi\nrw'Ikinyarwanda",
+    slug: "ururimi-rw-ikinyarwanda",
+    cropClass: styles.catCrop2,
+  },
+  {
+    label: "Imigani\nn'Ibisakuzo",
+    slug: "imigani-n-ibisakuzo",
+    cropClass: styles.catCrop3,
+  },
+  {
+    label: "Ubuvanganzo\nn'Inkuru",
+    slug: "ubuvanganzo-n-inkuru",
+    cropClass: styles.catCrop4,
+  },
+  {
+    label: "Imigenzo\nGakondo",
+    slug: "imigenzo-gakondo",
+    cropClass: styles.catCrop5,
+  },
 ] as const;
 
 export default function AhabanzaPage() {
@@ -90,8 +110,8 @@ export default function AhabanzaPage() {
             <div className={styles.categoriesGrid}>
               {CATEGORIES.map((cat) => (
                 <Link
-                  key={cat.label}
-                  href="/gushakisha"
+                  key={cat.slug}
+                  href={`/gushakisha?topic=${cat.slug}`}
                   className={styles.catItem}
                 >
                   <div className={styles.catCircle}>

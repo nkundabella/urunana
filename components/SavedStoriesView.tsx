@@ -31,9 +31,7 @@ export default function SavedStoriesView({ stories }: Props) {
 
   useEffect(() => {
     const stored = getPosts() as StorePost[];
-    if (stored.length > 0) {
-      setAllPosts(stored);
-    }
+    setAllPosts(stored);
     const session = getSession();
     if (session?.displayName) {
       setViewerSlug(session.displayName.toLowerCase().replace(/\s+/g, "-"));
@@ -114,7 +112,13 @@ export default function SavedStoriesView({ stories }: Props) {
                 />
               );
             }
-            return <StoryCard key={story.id} story={story} />;
+            return (
+              <StoryCard
+                key={story.id}
+                story={story}
+                href={`/inkuru/${story.slug || story.id}`}
+              />
+            );
           })}
         </div>
       )}

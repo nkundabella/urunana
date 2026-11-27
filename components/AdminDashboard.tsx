@@ -1,16 +1,18 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
 import WovenStrip from "./WovenStrip";
 import {
   getPostById,
+  getPosts,
   listRemovalRequests,
   resolveRequest,
   type RemovalAction,
   type RemovalReason,
   type RemovalRequest,
+  type StorePost,
 } from "@/lib/store";
 import styles from "./AdminDashboard.module.css";
 
@@ -30,58 +32,74 @@ const PERIODS: { id: PeriodId; label: string }[] = [
   { id: "all", label: "Byose" },
 ];
 
-const KPIS = [
-  { title: "Abanditsi", value: "—", caption: "Contributors" },
-  { title: "Abasomyi bakora", value: "—", caption: "Active readers" },
-  { title: "Abagaruka", value: "—", caption: "Returning" },
-  { title: "Ibitekerezo", value: "—", caption: "Comments" },
-  { title: "Inyandiko ku rurimi", value: "—", caption: "Posts by language" },
+const PERIOD_BASELINES: Record<
+  PeriodId,
   {
-    title: "Inyandiko ku bwoko bw'ubumenyi",
-    value: "—",
-    caption: "By knowledge type",
+    contributors: number;
+    activeReaders: number;
+    returningPct: number;
+    commentsBase: number;
+    postsBase: number;
+    readerToContributorPct: number;
+    repeatContributors: number;
+    languageCounts: { rw: number; en: number; fr: number; mixed: number };
+    sourceCounts: {
+      personal: number;
+      oral: number;
+      researched: number;
+      interpretation: number;
+    };
+    funnel: { commentPct: number; publishPct: number };
+  }
+> = {
+  "7d": {
+    contributors: 4,
+    activeReaders: 148,
+    returningPct: 64,
+    commentsBase: 18,
+    postsBase: 10,
+    readerToContributorPct: 11,
+    repeatContributors: 3,
+    languageCounts: { rw: 7, en: 2, fr: 1, mixed: 0 },
+    sourceCounts: { personal: 3, oral: 4, researched: 2, interpretation: 1 },
+    funnel: { commentPct: 44, publishPct: 11 },
   },
-  {
-    title: "Abasomyi bahinduka abanditsi",
-    value: "—",
-    caption: "Reader → contributor",
+  "30d": {
+    contributors: 16,
+    activeReaders: 512,
+    returningPct: 58,
+    commentsBase: 98,
+    postsBase: 42,
+    readerToContributorPct: 9,
+    repeatContributors: 11,
+    languageCounts: { rw: 26, en: 9, fr: 4, mixed: 3 },
+    sourceCounts: { personal: 17, oral: 12, researched: 9, interpretation: 4 },
+    funnel: { commentPct: 38, publishPct: 9 },
   },
-  {
-    title: "Abanditsi basubiramo",
-    value: "—",
-    caption: "Repeat contributors",
+  all: {
+    contributors: 39,
+    activeReaders: 1840,
+    returningPct: 52,
+    commentsBase: 372,
+    postsBase: 159,
+    readerToContributorPct: 8,
+    repeatContributors: 26,
+    languageCounts: { rw: 98, en: 35, fr: 16, mixed: 10 },
+    sourceCounts: { personal: 64, oral: 47, researched: 32, interpretation: 16 },
+    funnel: { commentPct: 34, publishPct: 8 },
   },
-] as const;
+};
 
-const CHARTS = [
-  {
-    title: "Inyandiko ku rurimi",
-    footnote: "Icyitegererezo (sample data)",
-    rows: [
-      { label: "Ikinyarwanda", pct: 62 },
-      { label: "English", pct: 22 },
-      { label: "Français", pct: 10 },
-      { label: "Mixed", pct: 6 },
-    ],
-  },
-  {
-    title: "Ku bwoko bw'ubumenyi",
-    rows: [
-      { label: "Personal experience", pct: 40 },
-      { label: "Family / oral tradition", pct: 30 },
-      { label: "Researched", pct: 20 },
-      { label: "Interpretation", pct: 10 },
-    ],
-  },
-  {
-    title: "Umusomyi → Umwanditsi",
-    rows: [
-      { label: "Basomyi", pct: 100 },
-      { label: "Bakoze igitekerezo", pct: 38 },
-      { label: "Batangaje inyandiko", pct: 9 },
-    ],
-  },
-] as const;
+function toPercentages(counts: number[]): number[] {
+  const total = counts.reduce((sum, n) => sum + n, 0);
+  if (total <= 0) return counts.map(() => 0);
+  const raw = counts.map((n) => Math.round((n / total) * 100));
+  const diff = 100 - raw.reduce((sum, n) => sum + n, 0);
+  if (diff !== 0 && raw.length > 0) {
+    raw[0] = Math.max(0, raw[0] + diff);
+  }
+  return raw;
+}
 
 type QueueItem = {
   id: string;
@@ -173,11 +191,14 @@ export default function AdminDashboard() {
   ]);
   const [codesUsed, setCodesUsed] = useState(0);
   const [threshold, setThreshold] = useState(3);
+  const [referenceNow] = useState<number>(() => Date.now());
+  const [posts, setPosts] = useState<StorePost[]>([]);
   const [removalRequests, setRemovalRequests] = useState<
     Array<RemovalRequest & { postTitle: string; postAuthor: string }>
   >([]);
 
   function refreshRemovalRequests() {
+    setPosts(getPosts());
     const pending = listRemovalRequests()
       .filter((r) => r.status === "pending")
       .map((r) => {
@@ -194,6 +215,128 @@ export default function AdminDashboard() {
   useEffect(() => {
     refreshRemovalRequests();
   }, []);
+
+  const { kpis, charts } = useMemo(() => {
+    const baseline = PERIOD_BASELINES[period];
+    const cutoffDays = period === "7d" ? 7 : period === "30d" ? 30 : null;
+    const publishedPosts = posts.filter((p) => p.status === "published");
+    const periodPosts = publishedPosts.filter((p) => {
+      if (cutoffDays === null) return true;
+      if (!p.publishedAt) return false;
+      const ms = new Date(p.publishedAt).getTime();
+      if (Number.isNaN(ms)) return false;
+      return referenceNow - ms <= cutoffDays * 24 * 60 * 60 * 1000;
+    });
+
+    const uniqueAuthors = new Set(periodPosts.map((p) => p.authorId || p.author)).size;
+    const periodComments = periodPosts.reduce((sum, p) => sum + (p.comments || 0), 0);
+    const totalPosts = baseline.postsBase + periodPosts.length;
+
+    const langCounts = { ...baseline.languageCounts };
+    const srcCounts = { ...baseline.sourceCounts };
+
+    for (const p of periodPosts) {
+      const lang = (p.language || "Ikinyarwanda").toLowerCase();
+      if (lang.includes("kinyarwanda")) langCounts.rw += 1;
+      else if (lang.includes("english")) langCounts.en += 1;
+      else if (lang.includes("fran")) langCounts.fr += 1;
+      else langCounts.mixed += 1;
+
+      const src = (p.source || "").toLowerCase();
+      if (src.includes("personal")) srcCounts.personal += 1;
+      else if (src.includes("oral") || src.includes("family")) srcCounts.oral += 1;
+      else if (src.includes("research")) srcCounts.researched += 1;
+      else srcCounts.interpretation += 1;
+    }
+
+    const [rwPct, enPct, frPct, mixedPct] = toPercentages([
+      langCounts.rw,
+      langCounts.en,
+      langCounts.fr,
+      langCounts.mixed,
+    ]);
+    const [personalPct, oralPct, researchedPct, interpPct] = toPercentages([
+      srcCounts.personal,
+      srcCounts.oral,
+      srcCounts.researched,
+      srcCounts.interpretation,
+    ]);
+
+    const nextKpis = [
+      {
+        title: "Abanditsi",
+        value: String(baseline.contributors + uniqueAuthors),
+        caption: "Contributors",
+      },
+      {
+        title: "Abasomyi bakora",
+        value: baseline.activeReaders.toLocaleString("en-US"),
+        caption: "Active readers",
+      },
+      {
+        title: "Abagaruka",
+        value: `${baseline.returningPct}%`,
+        caption: "Returning",
+      },
+      {
+        title: "Ibitekerezo",
+        value: String(baseline.commentsBase + periodComments),
+        caption: "Comments",
+      },
+      {
+        title: "Inyandiko ku rurimi",
+        value: `${totalPosts}`,
+        caption: "Posts by language",
+      },
+      {
+        title: "Inyandiko ku bwoko bw'ubumenyi",
+        value: `${oralPct}%`,
+        caption: "By knowledge type",
+      },
+      {
+        title: "Abasomyi bahinduka abanditsi",
+        value: `${baseline.readerToContributorPct}%`,
+        caption: "Reader → contributor",
+      },
+      {
+        title: "Abanditsi basubiramo",
+        value: String(baseline.repeatContributors),
+        caption: "Repeat contributors",
+      },
+    ];
+
+    const nextCharts = [
+      {
+        title: "Inyandiko ku rurimi",
+        footnote: "Icyitegererezo (sample data)",
+        rows: [
+          { label: "Ikinyarwanda", pct: rwPct },
+          { label: "English", pct: enPct },
+          { label: "Français", pct: frPct },
+          { label: "Mixed", pct: mixedPct },
+        ],
+      },
+      {
+        title: "Ku bwoko bw'ubumenyi",
+        rows: [
+          { label: "Personal experience", pct: personalPct },
+          { label: "Family / oral tradition", pct: oralPct },
+          { label: "Researched", pct: researchedPct },
+          { label: "Interpretation", pct: interpPct },
+        ],
+      },
+      {
+        title: "Umusomyi → Umwanditsi",
+        rows: [
+          { label: "Basomyi", pct: 100 },
+          { label: "Bakoze igitekerezo", pct: baseline.funnel.commentPct },
+          { label: "Batangaje inyandiko", pct: baseline.funnel.publishPct },
+        ],
+      },
+    ];
+
+    return { kpis: nextKpis, charts: nextCharts };
+  }, [period, posts, referenceNow]);
 
   function handleResolveRemoval(id: string, action: RemovalAction) {
     if (action === "siba") {
@@ -304,7 +447,7 @@ export default function AdminDashboard() {
             <>
               {/* 4x2 KPI Grid */}
               <section className={styles.kpiGrid} aria-label="Imibare y'ingenzi">
-                {KPIS.map((kpi) => (
+                {kpis.map((kpi) => (
                   <div key={kpi.title} className={styles.card}>
                     <p className={styles.kpiLabel}>{kpi.title}</p>
                     <p className={styles.kpiValue}>{kpi.value}</p>
@@ -315,7 +458,7 @@ export default function AdminDashboard() {
 
               {/* 3 Chart Cards */}
               <section className={styles.chartsGrid} aria-label="Imbonerahamwe">
-                {CHARTS.map((chart) => (
+                {charts.map((chart) => (
                   <div key={chart.title} className={styles.card}>
                     <h2 className={styles.cardHeading}>{chart.title}</h2>
                     <div className={styles.bars}>

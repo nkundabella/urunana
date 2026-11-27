@@ -1,4 +1,13 @@
+"use client";
+
+import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import {
+  getUiLanguage,
+  setUiLanguage,
+  type UiLanguage,
+} from "@/lib/store";
 import styles from "./Header.module.css";
 
 export type HeaderVariant = "A" | "B" | "C" | "landing";
@@ -8,7 +17,19 @@ type Props = {
   notificationCount?: number;
 };
 
+const LANGUAGE_OPTIONS: { code: UiLanguage; short: string; label: string }[] = [
+  { code: "rw", short: "RW", label: "Ikinyarwanda" },
+  { code: "en", short: "EN", label: "English" },
+  { code: "fr", short: "FR", label: "Français" },
+];
+
 export default function Header({ variant = "C", notificationCount = 2 }: Props) {
+  const router = useRouter();
+  const [searchText, setSearchText] = useState("");
+  const [lang, setLang] = useState<UiLanguage>("rw");
+  const [langMenuOpen, setLangMenuOpen] = useState(false);
+  const langWrapRef = useRef<HTMLDivElement | null>(null);
+
   const isLoggedInView = variant === "A" || variant === "B";
   const homeHref = isLoggedInView ? "/" : "/ahabanza";
   const navItems = [
@@ -16,6 +37,90 @@ export default function Header({ variant = "C", notificationCount = 2 }: Props) 
     { href: "/gushakisha", label: "Gushakisha" },
     { href: "/ibyo-nabitse", label: "Ibyo Nabitse" },
   ];
+
+  useEffect(() => {
+    const stored = getUiLanguage();
+    setLang(stored);
+  }, []);
+
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+
+  useEffect(() => {
+    if (!langMenuOpen) return;
+
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        langWrapRef.current &&
+        !langWrapRef.current.contains(e.target as Node)
+      ) {
+        setLangMenuOpen(false);
+      }
+    }
+
+    function handleKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape") {
+        setLangMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [langMenuOpen]);
+
+  function handleSearchSubmit(e: FormEvent) {
+    e.preventDefault();
+    const q = searchText.trim();
+    router.push(q ? `/gushakisha?q=${encodeURIComponent(q)}` : "/gushakisha");
+  }
+
+  function handleSelectLanguage(next: UiLanguage) {
+    setUiLanguage(next);
+    setLang(next);
+    setLangMenuOpen(false);
+  }
+
+  const currentLang =
+    LANGUAGE_OPTIONS.find((opt) => opt.code === lang) ?? LANGUAGE_OPTIONS[0];
+
+  const langToggle = (
+    <div className={styles.langWrap} ref={langWrapRef}>
+      <button
+        type="button"
+        className={styles.langBtn}
+        aria-haspopup="menu"
+        aria-expanded={langMenuOpen}
+        aria-label={`Ururimi: ${currentLang.label}`}
+        onClick={() => setLangMenuOpen((prev) => !prev)}
+      >
+        {currentLang.short}
+      </button>
+      {langMenuOpen ? (
+        <div className={styles.langMenu} role="menu" aria-label="Hitamo ururimi">
+          {LANGUAGE_OPTIONS.map((opt) => (
+            <button
+              key={opt.code}
+              type="button"
+              role="menuitemradio"
+              aria-checked={opt.code === lang}
+              className={`${styles.langOption}${
+                opt.code === lang ? ` ${styles.langOptionActive}` : ""
+              }`}
+              onClick={() => handleSelectLanguage(opt.code)}
+            >
+              <span>{opt.label}</span>
+              <span className={styles.langCode}>{opt.short}</span>
+            </button>
+          ))}
+        </div>
+      ) : null}
+    </div>
+  );
 
   return (
     <header className={styles.header}>
@@ -26,13 +131,19 @@ export default function Header({ variant = "C", notificationCount = 2 }: Props) 
         </Link>
 
         {variant === "B" ? (
-          <label className={styles.searchB}>
+          <form
+            className={styles.searchB}
+            onSubmit={handleSearchSubmit}
+            role="search"
+          >
             <input
               type="search"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
               placeholder="Shakisha mu Urunana…"
               aria-label="Shakisha mu Urunana"
             />
-          </label>
+          </form>
         ) : variant === "landing" ? (
           <div aria-hidden="true" />
         ) : (
@@ -48,7 +159,11 @@ export default function Header({ variant = "C", notificationCount = 2 }: Props) 
         <div className={styles.actions}>
           {variant === "A" && (
             <>
-              <label className={styles.searchA}>
+              <form
+                className={styles.searchA}
+                onSubmit={handleSearchSubmit}
+                role="search"
+              >
                 <span className={styles.searchIcon} aria-hidden="true">
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
                     <circle cx="11" cy="11" r="7" stroke="currentColor" strokeWidth="2" />
@@ -57,21 +172,28 @@ export default function Header({ variant = "C", notificationCount = 2 }: Props) 
                 </span>
                 <input
                   type="search"
+                  value={searchText}
+                  onChange={(e) => setSearchText(e.target.value)}
                   placeholder="Shakisha inkuru, imigani…"
                   aria-label="Shakisha inkuru, imigani"
                 />
-              </label>
+              </form>
               <Link href="/kwandika" className={styles.pillAccent}>
                 Kwandika
               </Link>
               <Link href="/imenyesha" className={styles.bell} aria-label="Imenyesha">
                 <BellIcon />
               </Link>
-              <span className={styles.lang}>RW</span>
-              <Link href="/umwirondoro" className={styles.avatar} aria-label="Umwirondoro">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/assets/blue-baskets.jpg" alt="" />
-              </Link>
+              {langToggle}
+              <div className={styles.avatarArea}>
+                <Link href="/umwirondoro" className={styles.avatar} aria-label="Umwirondoro">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/assets/blue-baskets.jpg" alt="" />
+                </Link>
+                <Link href="/igenamiterere" className={styles.settingsLink}>
+                  Igenamiterere
+                </Link>
+              </div>
             </>
           )}
 
@@ -94,10 +216,15 @@ export default function Header({ variant = "C", notificationCount = 2 }: Props) 
                   <span className={styles.badge}>{notificationCount}</span>
                 ) : null}
               </Link>
-              <Link href="/umwirondoro" className={styles.avatar} aria-label="Umwirondoro">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/assets/blue-baskets.jpg" alt="" />
-              </Link>
+              <div className={styles.avatarArea}>
+                <Link href="/umwirondoro" className={styles.avatar} aria-label="Umwirondoro">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src="/assets/blue-baskets.jpg" alt="" />
+                </Link>
+                <Link href="/igenamiterere" className={styles.settingsLink}>
+                  Igenamiterere
+                </Link>
+              </div>
             </>
           )}
 
@@ -106,7 +233,7 @@ export default function Header({ variant = "C", notificationCount = 2 }: Props) 
               <Link href="/kwandika" className={styles.pillOutline}>
                 Kwandika Inkuru
               </Link>
-              <span className={styles.lang}>RW</span>
+              {langToggle}
               <Link href="/kwinjira" className={styles.textLink}>
                 Kwinjira
               </Link>

@@ -105,6 +105,35 @@
   box-shadow: none;
 }
 
+.editProfileBtn {
+  flex-shrink: 0;
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.3rem;
+  padding: 0 1.35rem;
+  border: 1.5px solid var(--ink);
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  text-decoration: none;
+  line-height: 1;
+  transition: opacity 0.15s ease;
+}
+
+.editProfileBtn:hover {
+  opacity: 0.85;
+}
+
+.editProfileBtn:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
+}
+
 .bio {
   margin: 1.15rem 0 0;
   font-family: var(--font-display);
@@ -146,6 +175,15 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.85rem clamp(2rem, 3.6vw, 3rem);
+}
+
+.statLink {
+  text-decoration: none;
+  color: inherit;
+}
+
+.statLink:hover .statLabel {
+  text-decoration: underline;
 }
 
 .stat {
@@ -228,7 +266,8 @@
     margin-top: 0;
   }
 
-  .followBtn {
+  .followBtn,
+  .editProfileBtn {
     align-self: flex-start;
   }
 

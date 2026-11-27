@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WovenStrip from "@/components/WovenStrip";
@@ -31,7 +32,9 @@ export default function GushakishaPage() {
           }
           lead="Shakisha imigani, inyandiko n'inkuru zo mu muryango n'ubumenyi gakondo bw'u Rwanda."
         />
-        <SearchExplorer stories={stories} />
+        <Suspense fallback={null}>
+          <SearchExplorer stories={stories} />
+        </Suspense>
       </main>
       <Footer />
     </div>

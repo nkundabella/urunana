@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import styles from "./PeopleListView.module.css";
 
 type PersonItem = {
@@ -56,7 +57,20 @@ const FOLLOWING: PersonItem[] = [
 type TabId = "abagukurikira" | "abo-ukurikira";
 
 export default function PeopleListView() {
-  const [tab, setTab] = useState<TabId>("abagukurikira");
+  const searchParams = useSearchParams();
+  const paramTab = searchParams.get("tab");
+  const urlTab: TabId =
+    paramTab === "abo-ukurikira" ? "abo-ukurikira" : "abagukurikira";
+  const [selected, setSelected] = useState<{
+    source: string | null;
+    tab: TabId;
+  } | null>(null);
+  const tab: TabId =
+    selected && selected.source === paramTab ? selected.tab : urlTab;
+
+  function setTab(next: TabId) {
+    setSelected({ source: paramTab, tab: next });
+  }
 
   const people = tab === "abagukurikira" ? FOLLOWERS : FOLLOWING;
 
