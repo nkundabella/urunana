@@ -17,6 +17,7 @@ export default function KwinjiraPage() {
       <Header variant="C" />
       <main className={styles.main}>
         <SplitAuth
+          fit
           imageSide="right"
           imageSrc="/assets/blue-baskets.jpg"
           imageAlt="Agaseke — ubukoranyi bwa Rwanda"

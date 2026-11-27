@@ -162,7 +162,7 @@
   width: 100%;
   height: 9px;
   border-radius: 999px;
-  background: #2b211b;
+  background: var(--admin-track);
   overflow: hidden;
 }
 
@@ -176,15 +176,15 @@
 }
 
 .barTone1 {
-  background: #d97328;
+  background: var(--bar-tone-1);
 }
 
 .barTone2 {
-  background: #b65a1e;
+  background: var(--bar-tone-2);
 }
 
 .barTone3 {
-  background: #8c4115;
+  background: var(--bar-tone-3);
 }
 
 .footnote {
@@ -228,7 +228,7 @@
   justify-content: space-between;
   gap: 0.85rem 1.25rem;
   padding: 1rem 0;
-  border-top: 1px solid #3a2d25;
+  border-top: 1px solid var(--admin-divider);
 }
 
 .removalRow:first-child {
@@ -482,7 +482,7 @@
   width: 100%;
   height: 6px;
   border-radius: 999px;
-  background: #2b211b;
+  background: var(--admin-track);
   overflow: hidden;
 }
 

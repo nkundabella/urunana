@@ -107,7 +107,7 @@ export default function ContactForm() {
         <textarea
           id="contact-message"
           name="message"
-          rows={5}
+          rows={4}
           className={`${styles.textarea}${errors.message ? ` ${styles.inputError}` : ""}`}
           value={message}
           onChange={(e) => {
@@ -115,7 +115,7 @@ export default function ContactForm() {
             if (errors.message) setErrors((p) => ({ ...p, message: undefined }));
             if (sent) setSent(false);
           }}
-          placeholder="Andika ubutumwa bwawe hano..."
+          placeholder="Andika ubutumwa bwawe..."
           aria-invalid={Boolean(errors.message)}
         />
         {errors.message ? (

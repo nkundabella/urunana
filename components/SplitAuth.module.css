@@ -13,15 +13,17 @@
 .formPane {
   background: var(--cream);
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
   min-height: 0;
+  overflow-y: auto;
   /* horizontal 8.5% ⇒ content ≈ 83% of pane */
   padding: clamp(0.75rem, 2vh, 2.5rem) 8.5%;
 }
 
 .formPane > * {
   width: 100%;
+  margin-block: auto;
 }
 
 .imagePane {

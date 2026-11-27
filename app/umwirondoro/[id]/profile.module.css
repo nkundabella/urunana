@@ -16,7 +16,7 @@
   width: 100%;
   height: 210px;
   overflow: hidden;
-  background-color: #ddd3c5;
+  background-color: var(--banner-warm);
   border-bottom: 1px solid color-mix(in srgb, var(--maroon) 15%, transparent);
 }
 

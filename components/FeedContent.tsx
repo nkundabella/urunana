@@ -90,7 +90,8 @@ export default function FeedContent({ stories }: Props) {
           <div className={styles.featuredCard}>
             <p className={styles.featuredEyebrow}>IBYATORANYIJWE</p>
             <p className={styles.featuredPrompt}>
-              Ikiganiro cy&apos;icyumweru: [ikibazo cy&apos;umuco]
+              Ikiganiro cy&apos;icyumweru: Ni uwuhe mugani w&apos;Ikinyarwanda
+              wagufashije mu buzima?
             </p>
             <Link href="/kwandika" className={styles.featuredBtn}>
               Subiza
@@ -100,7 +101,10 @@ export default function FeedContent({ stories }: Props) {
           <div className={styles.authorCard}>
             <p className={styles.authorEyebrow}>UMWANDITSI W&apos;ICYUMWERU</p>
             <p className={styles.authorName}>Kalisa Mugisha</p>
-            <p className={styles.authorSummary}>[Incamake]</p>
+            <p className={styles.authorSummary}>
+              Umwanditsi n&apos;umushakashatsi ku mateka y&apos;u Rwanda
+              n&apos;ubuvanganzo nyemvugo bwo mu muryango.
+            </p>
           </div>
         </aside>
       </div>

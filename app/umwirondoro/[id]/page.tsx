@@ -39,7 +39,7 @@ export default async function ProfilePage({ params }: Props) {
     id,
     name: "Kalisa Mugisha",
     badge: "Umwanditsi Washinze (Founding Contributor)",
-    bio: "[Incamake y'umwanditsi]",
+    bio: "Umwanditsi n'umushakashatsi ku mateka y'u Rwanda, imigani y'imigenurano n'umurage w'ururimi rw'Ikinyarwanda.",
     interests: ["Amateka n'Umurage", "Imigani"],
     followers: null,
     following: null,

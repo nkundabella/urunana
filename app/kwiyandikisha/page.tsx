@@ -17,6 +17,7 @@ export default function KwiyandikishaPage() {
       <Header variant="C" />
       <main className={styles.main}>
         <SplitAuth
+          fit
           imageSide="left"
           imageLayout="clusters"
           imageSrc="/assets/maroon-baskets.jpg"

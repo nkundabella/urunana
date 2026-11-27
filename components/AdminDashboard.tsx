@@ -115,7 +115,7 @@ type QueueItem = {
 const INITIAL_QUEUE: QueueItem[] = [
   {
     id: "q-1",
-    item: "[Inyandiko]",
+    item: "Umurage wa Ruganzu II Ndoli",
     reports: 3,
     reason: "Iterabwoba · Ubuzima bwite",
     status: "Byihishe ako kanya",
@@ -125,7 +125,7 @@ const INITIAL_QUEUE: QueueItem[] = [
   },
   {
     id: "q-2",
-    item: "[Igitekerezo]",
+    item: "Igitekerezo kuri: Imigani y'Imigenurano",
     reports: 5,
     reason: "Spam · Kwiyitirira igihangano cy'abandi",
     status: "Byihishe: bigeze kuri N",
@@ -135,7 +135,7 @@ const INITIAL_QUEUE: QueueItem[] = [
   },
   {
     id: "q-3",
-    item: "[Inyandiko]",
+    item: "Ubuhanga bw'Agaseke mu Muco",
     reports: 2,
     reason: "Gutoteza",
     status: "Kugenzura bisanzwe",
@@ -145,7 +145,7 @@ const INITIAL_QUEUE: QueueItem[] = [
   },
   {
     id: "q-4",
-    item: "[Igitekerezo]",
+    item: "Igitekerezo kuri: Inzira y'Ubutwari",
     reports: 1,
     reason: "Ukuri kuvugwaho",
     status: "Kugenzura bisanzwe",
@@ -262,45 +262,46 @@ export default function AdminDashboard() {
       srcCounts.interpretation,
     ]);
 
+    const hasData = publishedPosts.length > 0;
     const nextKpis = [
       {
         title: "Abanditsi",
-        value: String(baseline.contributors + uniqueAuthors),
+        value: hasData ? String(baseline.contributors + uniqueAuthors) : "—",
         caption: "Contributors",
       },
       {
         title: "Abasomyi bakora",
-        value: baseline.activeReaders.toLocaleString("en-US"),
+        value: hasData ? baseline.activeReaders.toLocaleString("en-US") : "—",
         caption: "Active readers",
       },
       {
         title: "Abagaruka",
-        value: `${baseline.returningPct}%`,
+        value: hasData ? `${baseline.returningPct}%` : "—",
         caption: "Returning",
       },
       {
         title: "Ibitekerezo",
-        value: String(baseline.commentsBase + periodComments),
+        value: hasData ? String(baseline.commentsBase + periodComments) : "—",
         caption: "Comments",
       },
       {
         title: "Inyandiko ku rurimi",
-        value: `${totalPosts}`,
+        value: hasData ? `${totalPosts}` : "—",
         caption: "Posts by language",
       },
       {
         title: "Inyandiko ku bwoko bw'ubumenyi",
-        value: `${oralPct}%`,
+        value: hasData ? `${oralPct}%` : "—",
         caption: "By knowledge type",
       },
       {
         title: "Abasomyi bahinduka abanditsi",
-        value: `${baseline.readerToContributorPct}%`,
+        value: hasData ? `${baseline.readerToContributorPct}%` : "—",
         caption: "Reader → contributor",
       },
       {
         title: "Abanditsi basubiramo",
-        value: String(baseline.repeatContributors),
+        value: hasData ? String(baseline.repeatContributors) : "—",
         caption: "Repeat contributors",
       },
     ];

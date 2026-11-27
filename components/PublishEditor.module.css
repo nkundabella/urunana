@@ -241,7 +241,7 @@
   flex-shrink: 0;
   border: 1.5px solid color-mix(in srgb, var(--ink) 45%, var(--line));
   border-radius: 2px;
-  background: #ffffff;
+  background: var(--white);
   display: grid;
   place-items: center;
   cursor: pointer;
@@ -298,7 +298,7 @@
   flex-shrink: 0;
   border: 1.5px solid var(--cream);
   border-radius: 3px;
-  background: #ffffff;
+  background: var(--white);
   display: grid;
   place-items: center;
   cursor: pointer;
