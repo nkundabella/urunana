@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WovenStrip from "@/components/WovenStrip";
@@ -15,7 +16,9 @@ export default function MenyeshaPage() {
       <WovenStrip />
       <Header variant="A" />
       <main className={styles.backdrop}>
-        <ReportIssueForm />
+        <Suspense fallback={null}>
+          <ReportIssueForm />
+        </Suspense>
       </main>
       <Footer />
     </div>

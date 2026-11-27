@@ -12,6 +12,9 @@ import type {
 } from "@/lib/api-types";
 import styles from "./PublishEditor.module.css";
 
+const MAX_STORY_IMAGES = 3;
+const MAX_STORY_IMAGE_BYTES = 5 * 1024 * 1024; // 5 MB
+
 const CONTENT_TYPE_OPTIONS: Array<{ value: ContentType; label: string }> = [
   { value: "STORY", label: "Inkuru (Story)" },
   { value: "ARTICLE", label: "Article" },
@@ -80,6 +83,9 @@ export default function PublishEditor({
   const [sourceCitation, setSourceCitation] = useState(
     initialPost?.sourceCitation ?? ""
   );
+  const [images, setImages] = useState<string[]>(initialPost?.images ?? []);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageError, setImageError] = useState<string | null>(null);
   const [researchConsent, setResearchConsent] = useState(
     initialPost?.researchUseConsent ?? false
   );
@@ -146,15 +152,54 @@ export default function PublishEditor({
     });
   }
 
-  function handleImageSelect(e: ChangeEvent<HTMLInputElement>) {
+  async function handleImageSelect(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
-    if (!file) return;
-    insertFormatting(`\n![${file.name}](`, ")", "ifoto");
     e.target.value = "";
+    if (!file || uploadingImage) return;
+
+    if (images.length >= MAX_STORY_IMAGES) {
+      setImageError(`Ntushobora kurenza amafoto ${MAX_STORY_IMAGES} ku nyandiko imwe.`);
+      return;
+    }
+
+    if (file.size > MAX_STORY_IMAGE_BYTES) {
+      setImageError("Ifoto ntigomba kurenza 5 MB.");
+      return;
+    }
+
+    setUploadingImage(true);
+    setImageError(null);
+    setFormError(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const uploaded = await apiFetch<{ url: string }>(
+        "/api/v1/uploads/story-image",
+        {
+          method: "POST",
+          body: formData,
+        }
+      );
+      setImages((prev) => [...prev, uploaded.url]);
+    } catch (err) {
+      setImageError(
+        err instanceof ApiError
+          ? err.message
+          : "Ntibyakunze kohereza ifoto. Koresha JPEG, PNG cyangwa WebP (<= 5 MB)."
+      );
+    } finally {
+      setUploadingImage(false);
+    }
+  }
+
+  function removeImage(urlToRemove: string) {
+    setImages((prev) => prev.filter((url) => url !== urlToRemove));
+    setImageError(null);
   }
 
   async function handleSaveDraft() {
-    if (savingDraft || submitting) return;
+    if (savingDraft || submitting || uploadingImage) return;
     setSavingDraft(true);
     setFormError(null);
     try {
@@ -169,6 +214,7 @@ export default function PublishEditor({
           categoryIds: selectedCategoryIds,
           contentLanguage: language,
           sourceCitation: sourceCitation.trim() || null,
+          images,
           hostingLicenseGranted: true,
           researchUseConsent: researchConsent,
         },
@@ -189,7 +235,7 @@ export default function PublishEditor({
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!isValid || submitting) return;
+    if (!isValid || submitting || uploadingImage) return;
 
     setSubmitting(true);
     setFormError(null);
@@ -202,6 +248,7 @@ export default function PublishEditor({
       categoryIds: selectedCategoryIds,
       contentLanguage: language,
       sourceCitation: sourceCitation.trim() || null,
+      images,
       hostingLicenseGranted: true,
       researchUseConsent: researchConsent,
     };
@@ -321,14 +368,17 @@ export default function PublishEditor({
                 <button
                   type="button"
                   className={styles.toolBtn}
+                  disabled={uploadingImage || images.length >= MAX_STORY_IMAGES}
                   onClick={() => fileInputRef.current?.click()}
                 >
-                  Ifoto
+                  {uploadingImage
+                    ? "Kohereza…"
+                    : `Ifoto (${images.length}/${MAX_STORY_IMAGES})`}
                 </button>
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept="image/*"
+                  accept="image/jpeg,image/png,image/webp"
                   onChange={handleImageSelect}
                   className={styles.hiddenFile}
                   tabIndex={-1}
@@ -346,9 +396,81 @@ export default function PublishEditor({
               />
             </div>
 
+            {imageError ? (
+              <p
+                role="alert"
+                style={{
+                  margin: "0.4rem 0 0",
+                  color: "var(--red)",
+                  fontSize: "0.85rem",
+                  fontWeight: 600,
+                }}
+              >
+                {imageError}
+              </p>
+            ) : null}
+
+            {images.length > 0 ? (
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  gap: "0.75rem",
+                  marginTop: "0.75rem",
+                }}
+              >
+                {images.map((url, idx) => (
+                  <div
+                    key={url}
+                    style={{
+                      position: "relative",
+                      width: "96px",
+                      height: "72px",
+                      borderRadius: "10px",
+                      overflow: "hidden",
+                      border: "1px solid var(--line)",
+                      background: "var(--cream)",
+                    }}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={url}
+                      alt={`Ifoto ${idx + 1}`}
+                      style={{
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                      }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => removeImage(url)}
+                      aria-label={`Kuraho ifoto ${idx + 1}`}
+                      style={{
+                        position: "absolute",
+                        top: "4px",
+                        right: "4px",
+                        width: "22px",
+                        height: "22px",
+                        borderRadius: "50%",
+                        border: 0,
+                        background: "rgba(18, 12, 10, 0.82)",
+                        color: "#f5ebdc",
+                        fontSize: "0.75rem",
+                        fontWeight: 700,
+                        cursor: "pointer",
+                      }}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
             <p className={styles.helper}>
               Inama: tangira n&apos;inkuru wumvise ku muryango. ({bodyLen}{" "}
-              inyuguti)
+              inyuguti · Amafoto: {images.length}/{MAX_STORY_IMAGES})
             </p>
           </div>
         </section>
@@ -499,7 +621,7 @@ export default function PublishEditor({
             <button
               type="button"
               className={styles.draftBtn}
-              disabled={savingDraft || submitting}
+              disabled={savingDraft || submitting || uploadingImage}
               onClick={handleSaveDraft}
             >
               {savingDraft
@@ -510,7 +632,7 @@ export default function PublishEditor({
           <button
             type="submit"
             className={styles.submitBtn}
-            disabled={!isValid || submitting}
+            disabled={!isValid || submitting || uploadingImage}
           >
             {submitting ? "Gutunganya…" : submitLabel}
           </button>

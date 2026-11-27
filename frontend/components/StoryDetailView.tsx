@@ -469,7 +469,7 @@ export default function StoryDetailView({
           )
         ) : !isAuthor ? (
           <Link
-            href={`/menyesha?publicationId=${encodeURIComponent(post.id)}`}
+            href={`/menyesha?postId=${encodeURIComponent(post.id)}`}
             className={styles.reportLink}
           >
             Menyesha ikibazo kuri iyi nyandiko

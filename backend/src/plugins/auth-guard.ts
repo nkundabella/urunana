@@ -125,3 +125,26 @@ export async function requireAdminOrMod(
     });
   }
 }
+
+export async function requireAdmin(
+  request: FastifyRequest,
+  reply: FastifyReply
+) {
+  const user = await resolveAuthUser(request);
+  if (!user) {
+    return reply.code(401).send({
+      error: {
+        code: "UNAUTHORIZED",
+        message: "Banza winjire muri konti yawe.",
+      },
+    });
+  }
+  if (user.role !== UserRole.ADMIN) {
+    return reply.code(403).send({
+      error: {
+        code: "FORBIDDEN",
+        message: "Ubuyobozi bukuru gusa ni bwo bufite uburenganzira kuri iki gikorwa.",
+      },
+    });
+  }
+}

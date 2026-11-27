@@ -1,23 +1,25 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { saveContactMessage } from "@/lib/store";
+import { ApiError, apiFetch } from "@/lib/api";
 import styles from "./ContactForm.module.css";
 
 export default function ContactForm() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [message, setMessage] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<{
     name?: string;
     email?: string;
     message?: string;
+    form?: string;
   }>({});
-  const [sent, setSent] = useState(false);
+  const [sentMessage, setSentMessage] = useState<string | null>(null);
 
   function validate() {
     const next: typeof errors = {};
-    if (!name.trim()) {
+    if (name.trim().length < 2) {
       next.name = "Izina rirakenewe.";
     }
     const trimmedEmail = email.trim();
@@ -26,28 +28,67 @@ export default function ContactForm() {
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmedEmail)) {
       next.email = "Andika imeri yemewe.";
     }
-    if (!message.trim()) {
-      next.message = "Ubutumwa burakenewe.";
+    if (message.trim().length < 5) {
+      next.message = "Ubutumwa bugomba kuba bufite nibura inyuguti 5.";
     }
     setErrors(next);
     return Object.keys(next).length === 0;
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
+    if (submitting) return;
     if (!validate()) {
-      setSent(false);
+      setSentMessage(null);
       return;
     }
-    saveContactMessage({ name, email, message });
-    setName("");
-    setEmail("");
-    setMessage("");
-    setSent(true);
+
+    setSubmitting(true);
+    setErrors({});
+    setSentMessage(null);
+
+    try {
+      const res = await apiFetch<{ ok: boolean; message: string }>(
+        "/api/v1/contact",
+        {
+          method: "POST",
+          json: {
+            name: name.trim(),
+            email: email.trim(),
+            message: message.trim(),
+          },
+        }
+      );
+      setName("");
+      setEmail("");
+      setMessage("");
+      setSentMessage(res.message || "Murakoze! Twakiriye ubutumwa bwawe.");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setErrors({
+          name: err.fields?.name?.[0],
+          email: err.fields?.email?.[0],
+          message: err.fields?.message?.[0],
+          form: err.message,
+        });
+      } else {
+        setErrors({
+          form: "Habaye ikibazo mu kohereza ubutumwa. Ongera ugerageze.",
+        });
+      }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
     <form className={styles.card} onSubmit={handleSubmit} noValidate>
+      {errors.form ? (
+        <p className={styles.error} role="alert">
+          {errors.form}
+        </p>
+      ) : null}
+
       <div className={styles.fieldGroup}>
         <label htmlFor="contact-name" className={styles.label}>
           Izina
@@ -61,7 +102,7 @@ export default function ContactForm() {
           onChange={(e) => {
             setName(e.target.value);
             if (errors.name) setErrors((p) => ({ ...p, name: undefined }));
-            if (sent) setSent(false);
+            if (sentMessage) setSentMessage(null);
           }}
           placeholder="Kalisa Mugisha"
           autoComplete="name"
@@ -87,7 +128,7 @@ export default function ContactForm() {
           onChange={(e) => {
             setEmail(e.target.value);
             if (errors.email) setErrors((p) => ({ ...p, email: undefined }));
-            if (sent) setSent(false);
+            if (sentMessage) setSentMessage(null);
           }}
           placeholder="kalisa@urugero.rw"
           autoComplete="email"
@@ -113,7 +154,7 @@ export default function ContactForm() {
           onChange={(e) => {
             setMessage(e.target.value);
             if (errors.message) setErrors((p) => ({ ...p, message: undefined }));
-            if (sent) setSent(false);
+            if (sentMessage) setSentMessage(null);
           }}
           placeholder="Andika ubutumwa bwawe..."
           aria-invalid={Boolean(errors.message)}
@@ -125,15 +166,19 @@ export default function ContactForm() {
         ) : null}
       </div>
 
-      {sent ? (
+      {sentMessage ? (
         <p className={styles.success} role="status" aria-live="polite">
-          Murakoze! Twakiriye ubutumwa bwawe.
+          {sentMessage}
         </p>
       ) : null}
 
       <div className={styles.actions}>
-        <button type="submit" className={styles.submitBtn}>
-          Ohereza ubutumwa
+        <button
+          type="submit"
+          className={styles.submitBtn}
+          disabled={submitting}
+        >
+          {submitting ? "Kohereza…" : "Ohereza ubutumwa"}
         </button>
       </div>
     </form>

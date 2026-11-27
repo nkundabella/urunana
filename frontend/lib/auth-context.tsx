@@ -15,10 +15,29 @@ import {
   type AuthUser,
   type UiLanguage,
 } from "@/lib/api";
-import { getUiLanguage, setUiLanguage } from "@/lib/store";
-import { clearSession, setSession } from "@/src/data/session";
 
 export const PENDING_VERIFY_STORAGE_KEY = "urunana_pending_verify";
+const UI_LANG_STORAGE_KEY = "urunana_ui_lang";
+
+function readStoredUiLanguage(): UiLanguage {
+  if (typeof window === "undefined") return "rw";
+  try {
+    const raw = localStorage.getItem(UI_LANG_STORAGE_KEY);
+    if (raw === "en" || raw === "fr" || raw === "rw") return raw;
+  } catch {
+    // Ignore storage errors in private browsing modes.
+  }
+  return "rw";
+}
+
+function writeStoredUiLanguage(lang: UiLanguage): void {
+  if (typeof window === "undefined") return;
+  try {
+    localStorage.setItem(UI_LANG_STORAGE_KEY, lang);
+  } catch {
+    // Ignore storage errors.
+  }
+}
 
 export function setPendingVerifyIdentifier(identifier: string): void {
   if (typeof window === "undefined") return;
@@ -80,13 +99,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (nextUser) {
       const nextLang = normalizeLang(nextUser.preferredLanguage);
       setLanguage(nextLang);
-      setUiLanguage(nextLang);
-      setSession(
-        nextUser.emailOrPhone || nextUser.username,
-        nextUser.displayName
-      );
-    } else {
-      clearSession();
+      writeStoredUiLanguage(nextLang);
     }
   }, []);
 
@@ -104,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [applyUserState]);
 
   useEffect(() => {
-    setLanguage(normalizeLang(getUiLanguage()));
+    setLanguage(readStoredUiLanguage());
     void refreshAuth();
   }, [refreshAuth]);
 
@@ -127,7 +140,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setPreferredLanguage = useCallback(
     async (next: UiLanguage) => {
       setLanguage(next);
-      setUiLanguage(next);
+      writeStoredUiLanguage(next);
 
       if (!user) return;
 

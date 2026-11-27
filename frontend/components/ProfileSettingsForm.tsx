@@ -41,6 +41,7 @@ export default function ProfileSettingsForm() {
   const [interests, setInterests] = useState("");
   const [language, setLanguage] = useState<UiLanguage>("rw");
   const [avatarUrl, setAvatarUrl] = useState("/assets/blue-baskets.jpg");
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [avatarError, setAvatarError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
@@ -66,32 +67,53 @@ export default function ProfileSettingsForm() {
     setAvatarUrl(loaded.avatarUrl);
   }, [user]);
 
-  function handleAvatarChange(e: ChangeEvent<HTMLInputElement>) {
+  async function handleAvatarChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     e.target.value = "";
-    if (!file) return;
+    if (!file || uploadingAvatar) return;
 
     if (file.size > MAX_AVATAR_BYTES) {
       setAvatarError("Ifoto ntigomba kurenza 2 MB.");
       return;
     }
 
+    setUploadingAvatar(true);
     setAvatarError(null);
-    setStatusMessage(
-      "Ifoto izabikwa ku rubuga nyuma yo guhuza serivisi yo kohereza amafoto (Milestone 4)."
-    );
-    const reader = new FileReader();
-    reader.onload = () => {
-      if (typeof reader.result === "string") {
-        setAvatarUrl(reader.result);
-      }
-    };
-    reader.readAsDataURL(file);
+    setStatusMessage(null);
+    setErrorMessage(null);
+
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const uploaded = await apiFetch<{ url: string }>("/api/v1/uploads/avatar", {
+        method: "POST",
+        body: formData,
+      });
+
+      const res = await apiFetch<{ user: AuthUser }>("/api/v1/users/me", {
+        method: "PATCH",
+        json: { profilePhotoUrl: uploaded.url },
+      });
+
+      const nextUrl = res.user.profilePhotoUrl || uploaded.url;
+      setAvatarUrl(nextUrl);
+      setSavedState((prev) => ({ ...prev, avatarUrl: nextUrl }));
+      await refreshAuth();
+      setStatusMessage("Ifoto y'umwirondoro yahinduwe neza.");
+    } catch (err) {
+      setAvatarError(
+        err instanceof ApiError
+          ? err.message
+          : "Ntibyakunze kohereza ifoto. Koresha JPEG, PNG cyangwa WebP (<= 2 MB)."
+      );
+    } finally {
+      setUploadingAvatar(false);
+    }
   }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (saving) return;
+    if (saving || uploadingAvatar) return;
 
     const cleanName = displayName.trim();
     if (cleanName.length < 2) {
@@ -113,6 +135,9 @@ export default function ProfileSettingsForm() {
           bio: bio.trim() || null,
           areasOfInterest: parsedInterests,
           preferredLanguage: language,
+          ...(avatarUrl.startsWith("/uploads/")
+            ? { profilePhotoUrl: avatarUrl }
+            : {}),
         },
       });
 
@@ -163,19 +188,20 @@ export default function ProfileSettingsForm() {
           <button
             type="button"
             className={styles.outlineBtn}
+            disabled={uploadingAvatar}
             onClick={() => fileInputRef.current?.click()}
           >
-            Hindura ifoto
+            {uploadingAvatar ? "Kohereza ifoto…" : "Hindura ifoto"}
           </button>
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp"
             onChange={handleAvatarChange}
             className={styles.hiddenInput}
             tabIndex={-1}
           />
-          <span className={styles.hint}>Ntarenze 2 MB</span>
+          <span className={styles.hint}>JPEG, PNG cyangwa WebP · Ntarenze 2 MB</span>
           {avatarError ? (
             <p className={styles.error} role="alert">
               {avatarError}
@@ -277,13 +303,17 @@ export default function ProfileSettingsForm() {
       ) : null}
 
       <div className={styles.actions}>
-        <button type="submit" className={styles.primaryBtn} disabled={saving}>
+        <button
+          type="submit"
+          className={styles.primaryBtn}
+          disabled={saving || uploadingAvatar}
+        >
           {saving ? "Kubika…" : "Bika impinduka"}
         </button>
         <button
           type="button"
           className={styles.outlineBtn}
-          disabled={saving}
+          disabled={saving || uploadingAvatar}
           onClick={handleCancel}
         >
           Hagarika
