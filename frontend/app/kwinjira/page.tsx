@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WovenStrip from "@/components/WovenStrip";
@@ -25,7 +26,11 @@ export default function KwinjiraPage() {
             title: "Ubike inkuru ukunda.",
             sub: "Kuri Urunana, ushobora kubika inkuru gakondo, imigani n'amateka.",
           }}
-          form={<LoginForm />}
+          form={
+            <Suspense fallback={null}>
+              <LoginForm />
+            </Suspense>
+          }
         />
       </main>
       <Footer />

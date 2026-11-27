@@ -13,11 +13,11 @@ const envSchema = z.object({
   BACKEND_PORT: z.coerce.number().int().positive().default(4000),
   DATABASE_URL: z.string().min(1, "DATABASE_URL is required"),
   JWT_SECRET: z
-    .string()
-    .min(16)
-    .default("urunana-dev-jwt-secret-change-in-production-2026"),
+    .string({ required_error: "JWT_SECRET is required" })
+    .min(32, "JWT_SECRET must be at least 32 characters long"),
   CORS_ORIGIN: z.string().default("http://localhost:3000"),
   UPLOAD_DIR: z.string().default("./uploads"),
+  NEXT_PUBLIC_SITE_URL: z.string().default("http://localhost:3000"),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -27,14 +27,6 @@ if (!parsed.success) {
     "Invalid backend environment configuration:",
     parsed.error.flatten().fieldErrors
   );
-  process.exit(1);
-}
-
-if (
-  parsed.data.NODE_ENV === "production" &&
-  parsed.data.JWT_SECRET.startsWith("urunana-dev-")
-) {
-  console.error("JWT_SECRET must be explicitly set in production.");
   process.exit(1);
 }
 

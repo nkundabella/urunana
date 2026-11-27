@@ -271,11 +271,33 @@
   justify-content: center;
 }
 
-.avatarArea {
+.accountWrap {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 0.55rem;
   flex-shrink: 0;
+}
+
+.accountTrigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.15rem 0.45rem 0.15rem 0.15rem;
+  border: 0;
+  border-radius: var(--radius-pill);
+  background: transparent;
+  color: var(--cream);
+  cursor: pointer;
+  font-family: var(--font-body);
+}
+
+.accountTrigger:hover .accountLabel {
+  color: var(--orange);
+}
+
+.accountTrigger:focus-visible {
+  outline: 2px solid var(--orange);
+  outline-offset: 2px;
 }
 
 .avatar {
@@ -285,6 +307,7 @@
   border: 2px solid var(--orange);
   overflow: hidden;
   flex-shrink: 0;
+  display: inline-flex;
 }
 
 .avatar img {
@@ -293,19 +316,94 @@
   object-fit: cover;
 }
 
-.settingsLink {
+.accountLabel {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--cream);
+  max-width: 6.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.accountMenu {
+  position: absolute;
+  top: calc(100% + 0.45rem);
+  right: 0;
+  z-index: 45;
+  min-width: 12.5rem;
+  padding: 0.4rem;
+  border-radius: 12px;
+  background: var(--ink-2);
+  border: 1px solid var(--brown);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.42);
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.accountHeader {
+  display: flex;
+  flex-direction: column;
+  padding: 0.45rem 0.65rem 0.55rem;
+  border-bottom: 1px solid rgba(245, 235, 220, 0.12);
+  margin-bottom: 0.2rem;
+}
+
+.accountName {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 700;
+  color: var(--cream);
+  line-height: 1.25;
+}
+
+.accountHandle {
+  font-family: var(--font-body);
+  font-size: 0.75rem;
+  color: rgba(245, 235, 220, 0.65);
+}
+
+.accountItem,
+.logoutItem {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--cream);
   font-family: var(--font-body);
   font-size: 0.8125rem;
   font-weight: 500;
-  color: var(--cream);
   text-decoration: none;
-  white-space: nowrap;
-  opacity: 0.88;
+  text-align: left;
+  cursor: pointer;
 }
 
-.settingsLink:hover {
-  opacity: 1;
+.accountItem:hover {
+  background: rgba(245, 235, 220, 0.1);
+}
+
+.accountDivider {
+  height: 1px;
+  background: rgba(245, 235, 220, 0.12);
+  margin: 0.2rem 0.35rem;
+}
+
+.logoutItem {
   color: var(--orange);
+  font-weight: 700;
+}
+
+.logoutItem:hover:not(:disabled) {
+  background: rgba(242, 138, 53, 0.15);
+}
+
+.logoutItem:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 @media (max-width: 900px) {

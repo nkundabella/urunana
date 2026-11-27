@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WovenStrip from "@/components/WovenStrip";
@@ -26,7 +27,11 @@ export default function KwiyandikishaPage() {
             eyebrow: "ABISHYIZE HAMWE",
             title: "Injira mu muryango w'abanditsi n'abakunda umuco.",
           }}
-          form={<RegisterForm />}
+          form={
+            <Suspense fallback={null}>
+              <RegisterForm />
+            </Suspense>
+          }
         />
       </main>
       <Footer />

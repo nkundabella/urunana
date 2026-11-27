@@ -22,11 +22,22 @@
   color: var(--ink);
 }
 
+.target {
+  margin: 0.75rem 0 0;
+  font-family: var(--font-body);
+  font-size: 0.9375rem;
+  color: var(--gray);
+}
+
+.target strong {
+  color: var(--ink);
+}
+
 .form {
-  margin-top: clamp(1.5rem, 3.2vh, 2.25rem);
+  margin-top: clamp(1.35rem, 2.8vh, 2rem);
   display: flex;
   flex-direction: column;
-  gap: clamp(1.35rem, 2.8vh, 1.85rem);
+  gap: clamp(1.1rem, 2.4vh, 1.65rem);
 }
 
 .otpRow {
@@ -60,6 +71,19 @@
   outline-offset: 2px;
 }
 
+.error {
+  margin: -0.35rem 0 0;
+  padding: 0.7rem 0.95rem;
+  border: 1px solid color-mix(in srgb, var(--red) 35%, var(--line));
+  border-left: 3px solid var(--red);
+  border-radius: var(--radius-input);
+  background: var(--paper);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--red);
+}
+
 .submit {
   width: 100%;
   height: var(--btn-auth-h);
@@ -81,7 +105,7 @@
 
 .submit:disabled {
   cursor: not-allowed;
-  opacity: 0.88;
+  opacity: 0.78;
 }
 
 .submit:focus-visible {
@@ -108,8 +132,13 @@
   cursor: pointer;
 }
 
-.resendBtn:hover {
+.resendBtn:hover:not(:disabled) {
   text-decoration: underline;
+}
+
+.resendBtn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
 }
 
 .resendBtn:focus-visible {

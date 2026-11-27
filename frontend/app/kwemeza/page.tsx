@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WovenStrip from "@/components/WovenStrip";
@@ -26,7 +27,11 @@ export default function KwemezaPage() {
             title: "Hafi kurangiza.",
             sub: "Emeza imeri cyangwa telefoni yawe kugira ngo urangize kwiyandikisha.",
           }}
-          form={<VerifyForm />}
+          form={
+            <Suspense fallback={null}>
+              <VerifyForm />
+            </Suspense>
+          }
         />
       </main>
       <Footer />

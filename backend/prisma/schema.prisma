@@ -108,6 +108,23 @@ enum NotificationType {
   SYSTEM
 }
 
+enum AuthTokenType {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+}
+
+enum PostRemovalReason {
+  IKOSA
+  AMAKURU_BWITE
+  IKINDI
+}
+
+enum ContactMessageStatus {
+  NEW
+  READ
+  RESOLVED
+}
+
 model User {
   id                     String         @id @default(cuid())
   username               String         @unique
@@ -127,6 +144,7 @@ model User {
   researchUseConsent     Boolean        @default(false)
   communityRulesAccepted Boolean        @default(false)
   communityRulesAcceptedAt DateTime?
+  verifiedAt             DateTime?
   createdAt              DateTime       @default(now())
   updatedAt              DateTime       @updatedAt
   deletedAt              DateTime?
@@ -141,6 +159,9 @@ model User {
   removalRequests        RemovalRequest[]
   notifications          Notification[] @relation("UserNotifications")
   triggeredNotifications Notification[] @relation("ActorNotifications")
+  authTokens             AuthToken[]
+  createdInviteCodes     FoundingInviteCode[] @relation("InviteCodeCreator")
+  usedInviteCode         FoundingInviteCode?  @relation("InviteCodeUser")
 
   @@index([role])
   @@index([accountStatus])
@@ -149,16 +170,65 @@ model User {
 model RemovalRequest {
   id                  String               @id @default(cuid())
   userId              String?
+  publicationId       String?
+  postTitleSnapshot   String?
   requesterIdentifier String
+  reason              PostRemovalReason?
   status              RemovalRequestStatus @default(PENDING)
+  resolvedAction      String?
   notes               String?
   requestedAt         DateTime             @default(now())
   completedAt         DateTime?
   completedById       String?
 
   user                User?                @relation(fields: [userId], references: [id], onDelete: SetNull)
+  publication         Publication?         @relation(fields: [publicationId], references: [id], onDelete: SetNull)
 
   @@index([status])
+  @@index([publicationId])
+}
+
+model AuthToken {
+  id         String        @id @default(cuid())
+  userId     String
+  identifier String
+  type       AuthTokenType
+  codeHash   String
+  expiresAt  DateTime
+  usedAt     DateTime?
+  attempts   Int           @default(0)
+  createdAt  DateTime      @default(now())
+
+  user       User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([identifier, type])
+  @@index([userId, type])
+  @@index([codeHash])
+}
+
+model ContactMessage {
+  id        String               @id @default(cuid())
+  name      String
+  email     String
+  message   String
+  status    ContactMessageStatus @default(NEW)
+  createdAt DateTime             @default(now())
+
+  @@index([status, createdAt])
+}
+
+model FoundingInviteCode {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  createdById String
+  usedById    String?   @unique
+  usedAt      DateTime?
+  createdAt   DateTime  @default(now())
+
+  createdBy   User      @relation("InviteCodeCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  usedBy      User?     @relation("InviteCodeUser", fields: [usedById], references: [id], onDelete: SetNull)
+
+  @@index([createdById])
 }
 
 model TopicCategory {
@@ -210,6 +280,7 @@ model Publication {
   comments              Comment[]
   bookmarks             Bookmark[]
   reports               Report[]
+  removalRequests       RemovalRequest[]
   translationsFrom      PublicationTranslation[] @relation("OriginalPublication")
   translationsTo        PublicationTranslation[] @relation("TranslatedPublication")
 

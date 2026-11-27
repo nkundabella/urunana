@@ -26,7 +26,7 @@ const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function hashPassword(plain: string) {
-  const salt = await bcrypt.genSalt(10);
+  const salt = await bcrypt.genSalt(12);
   return bcrypt.hash(plain, salt);
 }
 
@@ -342,9 +342,11 @@ async function main() {
   const adminPassword = await hashPassword("AdminPassword123!");
   const demoPassword = await hashPassword("Urunana2026!");
 
+  const now = new Date();
+
   const admin = await prisma.user.upsert({
     where: { emailOrPhone: "admin@urunana.rw" },
-    update: {},
+    update: { verifiedAt: now },
     create: {
       username: "admin",
       displayName: "Urunana Administrator",
@@ -354,18 +356,19 @@ async function main() {
       isModerator: true,
       preferredLanguage: "rw",
       isFoundingContributor: true,
-      foundingJoinDate: new Date(),
+      foundingJoinDate: now,
       accountStatus: AccountStatus.ACTIVE,
       statedAgeBand: "18+",
       communityRulesAccepted: true,
-      communityRulesAcceptedAt: new Date(),
+      communityRulesAcceptedAt: now,
+      verifiedAt: now,
       bio: "Ubuyobozi bukuru bw'urubuga rwa Urunana, bufite inshingano zo kubungabunga amategeko n'ubusugire bw'umurage w'u Rwanda.",
     },
   });
 
   const contributor1 = await prisma.user.upsert({
     where: { emailOrPhone: "kalisa@urunana.rw" },
-    update: {},
+    update: { verifiedAt: now },
     create: {
       username: "kalisa_m",
       displayName: "Kalisa Mugisha",
@@ -375,19 +378,20 @@ async function main() {
       isModerator: false,
       preferredLanguage: "rw",
       isFoundingContributor: true,
-      foundingJoinDate: new Date(),
+      foundingJoinDate: now,
       accountStatus: AccountStatus.ACTIVE,
       statedAgeBand: "18+",
       communityRulesAccepted: true,
-      communityRulesAcceptedAt: new Date(),
-      bio: "Umushakashatsi n'umwanditsi ku mateka y'Ingoma z'u Rwanda, ibisekuru n'ubuvanganzo nyemvugo.",
-      areasOfInterest: ["Amateka", "Ubuvanganzo", "Inanga"],
+      communityRulesAcceptedAt: now,
+      verifiedAt: now,
+      bio: "Umwanditsi n'umushakashatsi ku mateka y'u Rwanda, imigani y'imigenurano n'umurage w'ururimi rw'Ikinyarwanda.",
+      areasOfInterest: ["Amateka n'Umurage", "Imigani", "Inanga"],
     },
   });
 
   const contributor2 = await prisma.user.upsert({
     where: { emailOrPhone: "keza@urunana.rw" },
-    update: {},
+    update: { verifiedAt: now },
     create: {
       username: "keza_uwase",
       displayName: "Keza Uwase",
@@ -397,41 +401,101 @@ async function main() {
       isModerator: false,
       preferredLanguage: "rw",
       isFoundingContributor: true,
-      foundingJoinDate: new Date(),
+      foundingJoinDate: now,
       accountStatus: AccountStatus.ACTIVE,
       statedAgeBand: "18+",
       communityRulesAccepted: true,
-      communityRulesAcceptedAt: new Date(),
+      communityRulesAcceptedAt: now,
+      verifiedAt: now,
       bio: "Umusizi akaba n'umutoza w'itorero ry'imbyino gakondo z'i Rwanda.",
       areasOfInterest: ["Imbyino gakondo", "Imyambarire", "Ibisakuzo"],
     },
   });
-  console.log("✅ Seeded Admin and 2 Founding Contributors.");
 
-  // 5. Word of the Week (FR-DISC-7, FR-LANG-4)
-  const now = new Date();
-  const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-
-  const word = await prisma.wordOfTheWeek.create({
-    data: {
-      word: "Urunana",
-      pronunciation: "u-ru-na-na",
-      explanationRw:
-        "Urunana ni isano rikomeye cyangwa umurongo w'abantu bafatanye urunana mu gushyigikirana, gufatanya no gusigasira ubumwe n'umurage.",
-      explanationEn:
-        "Urunana symbolizes unbreakable solidarity and cohesion, where people link hands together to support each other and safeguard their heritage.",
-      explanationFr:
-        "Urunana désigne une chaîne humaine solidaire, où chacun se donne la main pour préserver la cohésion et le patrimoine commun.",
-      culturalContext:
-        "Mu muco w'Abanyarwanda, gufata urunana byakoreshwaga mu gukemura ibibazo bisaba ubufatanye, nko guhinga umuganda cyangwa gutabarana.",
-      exampleSentenceRw: "Abaturage bafashe urunana mu gusana iteme ryari ryasenywe n'imvura.",
-      exampleSentenceTranslation: "The villagers joined hands in solidarity to repair the bridge damaged by rain.",
-      startDate: now,
-      endDate: nextWeek,
-      isActive: true,
-      createdById: admin.id,
+  await prisma.user.upsert({
+    where: { emailOrPhone: "uwase@urunana.rw" },
+    update: { verifiedAt: now },
+    create: {
+      username: "uwase_aline",
+      displayName: "Uwase Aline",
+      emailOrPhone: "uwase@urunana.rw",
+      passwordHash: demoPassword,
+      role: UserRole.USER,
+      isModerator: false,
+      preferredLanguage: "rw",
+      isFoundingContributor: false,
+      accountStatus: AccountStatus.ACTIVE,
+      statedAgeBand: "18+",
+      communityRulesAccepted: true,
+      communityRulesAcceptedAt: now,
+      verifiedAt: now,
+      bio: "Umushakashatsi ku migani y'imigenurano n'ururimi rw'Ikinyarwanda.",
+      areasOfInterest: ["Ururimi", "Imigani"],
     },
   });
+
+  await prisma.user.upsert({
+    where: { emailOrPhone: "eric@urunana.rw" },
+    update: { verifiedAt: now },
+    create: {
+      username: "niyonzima_eric",
+      displayName: "Niyonzima Eric",
+      emailOrPhone: "eric@urunana.rw",
+      passwordHash: demoPassword,
+      role: UserRole.USER,
+      isModerator: false,
+      preferredLanguage: "rw",
+      isFoundingContributor: false,
+      accountStatus: AccountStatus.ACTIVE,
+      statedAgeBand: "18+",
+      communityRulesAccepted: true,
+      communityRulesAcceptedAt: now,
+      verifiedAt: now,
+      bio: "Yandika ku bukorikori gakondo n'imigenzo yo mu Rwanda rwo hambere.",
+      areasOfInterest: ["Imigenzo Gakondo", "Ubukorikori"],
+    },
+  });
+
+  const inviteCodes = ["URUNANA-2026-01", "URUNANA-2026-02", "URUNANA-2026-03"];
+  for (const code of inviteCodes) {
+    await prisma.foundingInviteCode.upsert({
+      where: { code },
+      update: {},
+      create: {
+        code,
+        createdById: admin.id,
+      },
+    });
+  }
+  console.log("✅ Seeded Admin, 4 verified contributors, and 3 founding invite codes.");
+
+  // 5. Word of the Week (FR-DISC-7, FR-LANG-4)
+  const nextWeek = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
+  const existingWord = await prisma.wordOfTheWeek.findFirst({
+    where: { word: "Urunana", isActive: true },
+  });
+  const word =
+    existingWord ??
+    (await prisma.wordOfTheWeek.create({
+      data: {
+        word: "Urunana",
+        pronunciation: "u-ru-na-na",
+        explanationRw:
+          "Urunana ni isano rikomeye cyangwa umurongo w'abantu bafatanye urunana mu gushyigikirana, gufatanya no gusigasira ubumwe n'umurage.",
+        explanationEn:
+          "Urunana symbolizes unbreakable solidarity and cohesion, where people link hands together to support each other and safeguard their heritage.",
+        explanationFr:
+          "Urunana désigne une chaîne humaine solidaire, où chacun se donne la main pour préserver la cohésion et le patrimoine commun.",
+        culturalContext:
+          "Mu muco w'Abanyarwanda, gufata urunana byakoreshwaga mu gukemura ibibazo bisaba ubufatanye, nko guhinga umuganda cyangwa gutabarana.",
+        exampleSentenceRw: "Abaturage bafashe urunana mu gusana iteme ryari ryasenywe n'imvura.",
+        exampleSentenceTranslation: "The villagers joined hands in solidarity to repair the bridge damaged by rain.",
+        startDate: now,
+        endDate: nextWeek,
+        isActive: true,
+        createdById: admin.id,
+      },
+    }));
   console.log(`✅ Seeded Word of the Week: "${word.word}".`);
 
   // 6. Sample Publications
@@ -536,28 +600,61 @@ These linguistic expressions preserve philosophical insights refined over centur
     },
   });
 
-  // Add sample comments to pub1 (Threaded comment demo)
-  const comment1 = await prisma.comment.create({
-    data: {
-      publicationId: pub1.id,
-      authorId: contributor2.id,
-      body: "Murakoze cyane ku busobanuro bwiza ku mateka ya Ruganzu Ndoli! Ese mwadutangariza niba hari amakuru ku buryo yambutse uruzi rw'Akanyaru?",
-      isAlternativeVersion: false,
-      status: "VISIBLE",
-    },
+  // Add sample comments to pub1 (Idempotent threaded comment demo)
+  const existingComment = await prisma.comment.findFirst({
+    where: { publicationId: pub1.id, parentId: null },
   });
+  if (!existingComment) {
+    const comment1 = await prisma.comment.create({
+      data: {
+        publicationId: pub1.id,
+        authorId: contributor2.id,
+        body: "Murakoze cyane ku busobanuro bwiza ku mateka ya Ruganzu Ndoli! Ese mwadutangariza niba hari amakuru ku buryo yambutse uruzi rw'Akanyaru?",
+        isAlternativeVersion: false,
+        status: "VISIBLE",
+      },
+    });
 
-  // Reply to comment 1 (1 level of threading)
-  await prisma.comment.create({
-    data: {
-      publicationId: pub1.id,
-      authorId: contributor1.id,
-      parentId: comment1.id,
-      body: "Murakoze Keza! Yego, amateka avuga ko Ruganzu yambutse Akanyaru ahetswe n'Ibisumizi, akoresheje ingobyi y'urukangaga. Tuzabishyira mu nyandiko itaha.",
-      isAlternativeVersion: false,
-      status: "VISIBLE",
-    },
+    await prisma.comment.create({
+      data: {
+        publicationId: pub1.id,
+        authorId: contributor1.id,
+        parentId: comment1.id,
+        body: "Murakoze Keza! Yego, amateka avuga ko Ruganzu yambutse Akanyaru ahetswe n'Ibisumizi, akoresheje ingobyi y'urukangaga. Tuzabishyira mu nyandiko itaha.",
+        isAlternativeVersion: false,
+        status: "VISIBLE",
+      },
+    });
+  }
+
+  // Seed initial unread notifications for Kalisa (idempotent)
+  const existingNotifCount = await prisma.notification.count({
+    where: { userId: contributor1.id },
   });
+  if (existingNotifCount === 0) {
+    await prisma.notification.createMany({
+      data: [
+        {
+          userId: contributor1.id,
+          actorId: contributor2.id,
+          type: "COMMENT",
+          title: "Yasubije igitekerezo cyawe",
+          message: "Keza Uwase yatanze igitekerezo ku nkuru yawe.",
+          entityType: "PUBLICATION",
+          entityId: pub1.id,
+          isRead: false,
+        },
+        {
+          userId: contributor1.id,
+          actorId: admin.id,
+          type: "SYSTEM",
+          title: "Ijambo ry'icyumweru ryashyizwe hanze",
+          message: "Urunana — Ijambo ry'icyumweru rishya rirahari.",
+          isRead: false,
+        },
+      ],
+    });
+  }
 
   console.log("✅ Seeded sample publications and discussion threads.");
   console.log("🎉 Seeding completed successfully!");

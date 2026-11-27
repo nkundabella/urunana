@@ -2,14 +2,13 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Field from "./Field";
+import { ApiError, apiFetch, type AuthUser, type UiLanguage } from "@/lib/api";
 import {
-  getUiLanguage,
-  setSession,
-  setUiLanguage,
-  type UiLanguage,
-} from "@/src/data/session";
+  setPendingVerifyIdentifier,
+  useAuth,
+} from "@/lib/auth-context";
 import styles from "./RegisterForm.module.css";
 
 const LANGUAGES: { id: UiLanguage; label: string }[] = [
@@ -18,63 +17,135 @@ const LANGUAGES: { id: UiLanguage; label: string }[] = [
   { id: "fr", label: "Français" },
 ];
 
+type RegisterErrors = {
+  identifier?: string;
+  displayName?: string;
+  password?: string;
+  age?: string;
+  rules?: string;
+  inviteCode?: string;
+  form?: string;
+};
+
 export default function RegisterForm() {
   const router = useRouter();
-  const [lang, setLang] = useState<UiLanguage>("rw");
+  const searchParams = useSearchParams();
+  const { language, setPreferredLanguage } = useAuth();
+
+  const initialInvite = searchParams.get("invite")?.trim() || "";
+
+  const [lang, setLang] = useState<UiLanguage>(language);
   const [identifier, setIdentifier] = useState("");
   const [displayName, setDisplayName] = useState("");
   const [password, setPassword] = useState("");
+  const [inviteCode, setInviteCode] = useState(initialInvite);
+  const [showInviteField, setShowInviteField] = useState(Boolean(initialInvite));
   const [ageOk, setAgeOk] = useState(false);
   const [rulesOk, setRulesOk] = useState(false);
-  const [errors, setErrors] = useState<{
-    identifier?: string;
-    displayName?: string;
-    password?: string;
-    age?: string;
-    rules?: string;
-  }>({});
+  const [submitting, setSubmitting] = useState(false);
+  const [errors, setErrors] = useState<RegisterErrors>({});
 
   useEffect(() => {
-    setLang(getUiLanguage());
-  }, []);
+    setLang(language);
+  }, [language]);
 
   function chooseLanguage(next: UiLanguage) {
     setLang(next);
-    setUiLanguage(next);
+    void setPreferredLanguage(next);
   }
 
   function validate() {
-    const next: typeof errors = {};
+    const next: RegisterErrors = {};
     if (!identifier.trim()) {
       next.identifier = "Imeri cyangwa telefoni birakenewe.";
     }
-    if (!displayName.trim()) {
-      next.displayName = "Izina ry'urubuga rirakenewe.";
+    if (displayName.trim().length < 2) {
+      next.displayName = "Izina ry'urubuga rirakenewe (nibura inyuguti 2).";
     }
     if (password.length < 6) {
       next.password = "Ijambobanga rigomba kuba nibura inyuguti 6.";
     }
     if (!ageOk) {
-      next.age = "Iyi nyandiko irakenewe.";
+      next.age = "Ugomba kwemeza ko ufite nibura imyaka 13.";
     }
     if (!rulesOk) {
-      next.rules = "Iyi nyandiko irakenewe.";
+      next.rules = "Ugomba kwemera Amategeko y'Umuryango.";
     }
     setErrors(next);
     return Object.keys(next).length === 0;
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!validate()) return;
-    setSession(identifier.trim(), displayName.trim());
-    router.push("/kwemeza");
+    if (submitting || !validate()) return;
+
+    setSubmitting(true);
+    setErrors({});
+
+    const trimmedIdentifier = identifier.trim();
+    const trimmedInvite = inviteCode.trim();
+
+    try {
+      await apiFetch<{ user: AuthUser; verificationRequired: boolean }>(
+        "/api/v1/auth/register",
+        {
+          method: "POST",
+          json: {
+            identifier: trimmedIdentifier,
+            displayName: displayName.trim(),
+            password,
+            preferredLanguage: lang,
+            ageConfirmed: ageOk,
+            rulesAccepted: rulesOk,
+            ...(trimmedInvite ? { inviteCode: trimmedInvite } : {}),
+          },
+        }
+      );
+
+      setPendingVerifyIdentifier(trimmedIdentifier);
+      router.push(
+        `/kwemeza?identifier=${encodeURIComponent(trimmedIdentifier)}`
+      );
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.code === "IDENTIFIER_TAKEN") {
+          setErrors({ identifier: err.message });
+        } else if (err.code === "USERNAME_TAKEN") {
+          setErrors({ displayName: err.message });
+        } else if (err.code === "INVALID_INVITE_CODE") {
+          setShowInviteField(true);
+          setErrors({ inviteCode: err.message });
+        } else if (err.fields) {
+          setErrors({
+            identifier: err.fields.identifier?.[0],
+            displayName: err.fields.displayName?.[0],
+            password: err.fields.password?.[0],
+            age: err.fields.ageConfirmed?.[0],
+            rules: err.fields.rulesAccepted?.[0],
+            inviteCode: err.fields.inviteCode?.[0],
+            form: err.message,
+          });
+        } else {
+          setErrors({ form: err.message });
+        }
+      } else {
+        setErrors({
+          form: "Habaye ikibazo mu gufungura konti. Ongera ugerageze.",
+        });
+      }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
     <div className={styles.wrap}>
       <p className={styles.eyebrow}>URURIMI WIFUZA GUKORESHA</p>
-      <div className={styles.langs} role="group" aria-label="Ururimi wifuza gukoresha">
+      <div
+        className={styles.langs}
+        role="group"
+        aria-label="Ururimi wifuza gukoresha"
+      >
         {LANGUAGES.map((item) => (
           <button
             key={item.id}
@@ -95,6 +166,12 @@ export default function RegisterForm() {
       </h1>
 
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
+        {errors.form ? (
+          <p className={styles.formError} role="alert">
+            {errors.form}
+          </p>
+        ) : null}
+
         <Field
           id="identifier"
           name="identifier"
@@ -102,8 +179,12 @@ export default function RegisterForm() {
           value={identifier}
           onChange={(v) => {
             setIdentifier(v);
-            if (errors.identifier) {
-              setErrors((prev) => ({ ...prev, identifier: undefined }));
+            if (errors.identifier || errors.form) {
+              setErrors((prev) => ({
+                ...prev,
+                identifier: undefined,
+                form: undefined,
+              }));
             }
           }}
           placeholder="kalisa@urugero.rw"
@@ -117,11 +198,15 @@ export default function RegisterForm() {
           value={displayName}
           onChange={(v) => {
             setDisplayName(v);
-            if (errors.displayName) {
-              setErrors((prev) => ({ ...prev, displayName: undefined }));
+            if (errors.displayName || errors.form) {
+              setErrors((prev) => ({
+                ...prev,
+                displayName: undefined,
+                form: undefined,
+              }));
             }
           }}
-          placeholder="kalisa"
+          placeholder="Kalisa Mugisha"
           autoComplete="nickname"
           error={errors.displayName}
         />
@@ -133,14 +218,44 @@ export default function RegisterForm() {
           value={password}
           onChange={(v) => {
             setPassword(v);
-            if (errors.password) {
-              setErrors((prev) => ({ ...prev, password: undefined }));
+            if (errors.password || errors.form) {
+              setErrors((prev) => ({
+                ...prev,
+                password: undefined,
+                form: undefined,
+              }));
             }
           }}
           placeholder="Byibura inyuguti 6"
           autoComplete="new-password"
           error={errors.password}
         />
+
+        {showInviteField ? (
+          <Field
+            id="inviteCode"
+            name="inviteCode"
+            label="Kode y'Ubutumire (Si itegeko / Optional)"
+            value={inviteCode}
+            onChange={(v) => {
+              setInviteCode(v);
+              if (errors.inviteCode) {
+                setErrors((prev) => ({ ...prev, inviteCode: undefined }));
+              }
+            }}
+            placeholder="URUNANA-2026-01"
+            autoComplete="off"
+            error={errors.inviteCode}
+          />
+        ) : (
+          <button
+            type="button"
+            className={styles.inviteToggle}
+            onClick={() => setShowInviteField(true)}
+          >
+            Ufite kode y&apos;ubutumire? (Founding invite code)
+          </button>
+        )}
 
         <label className={styles.check}>
           <input
@@ -151,7 +266,9 @@ export default function RegisterForm() {
               if (errors.age) setErrors((prev) => ({ ...prev, age: undefined }));
             }}
           />
-          <span>Nemeza ko mfite nibura imyaka 13 y&apos;amavuko (I am at least 13)</span>
+          <span>
+            Nemeza ko mfite nibura imyaka 13 y&apos;amavuko (I am at least 13)
+          </span>
         </label>
         {errors.age ? (
           <p className={styles.error} role="alert">
@@ -165,7 +282,9 @@ export default function RegisterForm() {
             checked={rulesOk}
             onChange={(e) => {
               setRulesOk(e.target.checked);
-              if (errors.rules) setErrors((prev) => ({ ...prev, rules: undefined }));
+              if (errors.rules) {
+                setErrors((prev) => ({ ...prev, rules: undefined }));
+              }
             }}
           />
           <span>
@@ -178,8 +297,8 @@ export default function RegisterForm() {
           </p>
         ) : null}
 
-        <button type="submit" className={styles.submit}>
-          Fungura Konti
+        <button type="submit" className={styles.submit} disabled={submitting}>
+          {submitting ? "Gufungura konti…" : "Fungura Konti"}
         </button>
       </form>
 

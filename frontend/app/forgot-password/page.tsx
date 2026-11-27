@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WovenStrip from "@/components/WovenStrip";
@@ -28,7 +29,11 @@ export default function ForgotPasswordPage() {
             title: "Ntugire impungenge.",
             sub: "Tuzakohereza ihuzo ryo gushyiraho irindi jambobanga.",
           }}
-          form={<ForgotPasswordForm />}
+          form={
+            <Suspense fallback={null}>
+              <ForgotPasswordForm />
+            </Suspense>
+          }
         />
       </main>
       <Footer />

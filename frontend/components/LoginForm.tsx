@@ -2,18 +2,32 @@
 
 import { useState, FormEvent } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Field from "./Field";
-import { setSession } from "@/src/data/session";
+import { ApiError, apiFetch, type AuthUser } from "@/lib/api";
+import { setPendingVerifyIdentifier, useAuth } from "@/lib/auth-context";
 import styles from "./LoginForm.module.css";
+
+function getSafeNextPath(raw: string | null): string {
+  if (!raw) return "/";
+  if (raw.startsWith("/") && !raw.startsWith("//") && !raw.startsWith("/\\")) {
+    return raw;
+  }
+  return "/";
+}
 
 export default function LoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { refreshAuth } = useAuth();
+
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
   const [errors, setErrors] = useState<{
     identifier?: string;
     password?: string;
+    form?: string;
   }>({});
 
   function validate() {
@@ -28,11 +42,44 @@ export default function LoginForm() {
     return Object.keys(next).length === 0;
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!validate()) return;
-    setSession(identifier.trim());
-    router.push("/");
+    if (submitting || !validate()) return;
+
+    setSubmitting(true);
+    setErrors({});
+
+    const trimmedIdentifier = identifier.trim();
+
+    try {
+      await apiFetch<{ user: AuthUser }>("/api/v1/auth/login", {
+        method: "POST",
+        json: {
+          identifier: trimmedIdentifier,
+          password,
+        },
+      });
+      await refreshAuth();
+      const target = getSafeNextPath(searchParams.get("next"));
+      router.push(target);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        if (err.code === "ACCOUNT_NOT_VERIFIED") {
+          setPendingVerifyIdentifier(trimmedIdentifier);
+          router.push(
+            `/kwemeza?identifier=${encodeURIComponent(trimmedIdentifier)}&unverified=1`
+          );
+          return;
+        }
+        setErrors({ form: err.message });
+      } else {
+        setErrors({
+          form: "Habaye ikibazo mu kwinjira. Ongera ugerageze.",
+        });
+      }
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -44,6 +91,12 @@ export default function LoginForm() {
       </p>
 
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
+        {errors.form ? (
+          <p className={styles.formError} role="alert">
+            {errors.form}
+          </p>
+        ) : null}
+
         <Field
           id="identifier"
           name="identifier"
@@ -51,11 +104,15 @@ export default function LoginForm() {
           value={identifier}
           onChange={(v) => {
             setIdentifier(v);
-            if (errors.identifier) {
-              setErrors((prev) => ({ ...prev, identifier: undefined }));
+            if (errors.identifier || errors.form) {
+              setErrors((prev) => ({
+                ...prev,
+                identifier: undefined,
+                form: undefined,
+              }));
             }
           }}
-          placeholder="kalisa@urugero.rw"
+          placeholder="kalisa@urunana.rw"
           autoComplete="username"
           error={errors.identifier}
         />
@@ -68,8 +125,12 @@ export default function LoginForm() {
           value={password}
           onChange={(v) => {
             setPassword(v);
-            if (errors.password) {
-              setErrors((prev) => ({ ...prev, password: undefined }));
+            if (errors.password || errors.form) {
+              setErrors((prev) => ({
+                ...prev,
+                password: undefined,
+                form: undefined,
+              }));
             }
           }}
           autoComplete="current-password"
@@ -80,8 +141,8 @@ export default function LoginForm() {
           Wibagiwe ijambobanga?
         </Link>
 
-        <button type="submit" className={styles.submit}>
-          Injira →
+        <button type="submit" className={styles.submit} disabled={submitting}>
+          {submitting ? "Kwinjira…" : "Injira →"}
         </button>
       </form>
 

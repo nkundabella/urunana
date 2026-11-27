@@ -8,6 +8,7 @@ import rateLimit from "@fastify/rate-limit";
 import fastifyStatic from "@fastify/static";
 import { env } from "./config/env.js";
 import { checkDatabaseConnection } from "./lib/prisma.js";
+import { authRoutes } from "./modules/auth/auth.routes.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -78,6 +79,8 @@ export async function buildApp() {
       database: "connected",
     };
   });
+
+  await app.register(authRoutes);
 
   return app;
 }

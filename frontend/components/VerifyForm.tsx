@@ -4,22 +4,63 @@ import {
   ClipboardEvent,
   FormEvent,
   KeyboardEvent,
+  useEffect,
   useRef,
   useState,
 } from "react";
-import { useRouter } from "next/navigation";
-import { getSession, setSession } from "@/src/data/session";
+import { useRouter, useSearchParams } from "next/navigation";
+import Field from "./Field";
+import { ApiError, apiFetch, type AuthUser } from "@/lib/api";
+import {
+  clearPendingVerifyIdentifier,
+  getPendingVerifyIdentifier,
+  setPendingVerifyIdentifier,
+  useAuth,
+} from "@/lib/auth-context";
 import styles from "./VerifyForm.module.css";
 
 const CODE_LENGTH = 6;
 
 export default function VerifyForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const { refreshAuth } = useAuth();
+
+  const queryIdentifier = searchParams.get("identifier")?.trim() || "";
+  const unverifiedRedirect = searchParams.get("unverified") === "1";
+
+  const [identifier, setIdentifier] = useState(queryIdentifier);
+  const [hasPresetIdentifier, setHasPresetIdentifier] = useState(
+    Boolean(queryIdentifier)
+  );
   const [digits, setDigits] = useState<string[]>(Array(CODE_LENGTH).fill(""));
-  const [resent, setResent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [notice, setNotice] = useState<string | null>(
+    unverifiedRedirect
+      ? "Konti yawe ntiyaremezwa. Andika kode wohererejwe cyangwa usabe indi."
+      : null
+  );
   const inputRefs = useRef<Array<HTMLInputElement | null>>([]);
 
-  const isComplete = digits.every((d) => /^\d$/.test(d));
+  useEffect(() => {
+    if (queryIdentifier) {
+      setIdentifier(queryIdentifier);
+      setHasPresetIdentifier(true);
+      setPendingVerifyIdentifier(queryIdentifier);
+      return;
+    }
+    const stored = getPendingVerifyIdentifier();
+    if (stored) {
+      setIdentifier(stored);
+      setHasPresetIdentifier(true);
+    }
+  }, [queryIdentifier]);
+
+  const code = digits.join("");
+  const isComplete =
+    digits.every((d) => /^\d$/.test(d)) && identifier.trim().length >= 2;
 
   function focusIndex(index: number) {
     const clamped = Math.max(0, Math.min(CODE_LENGTH - 1, index));
@@ -28,6 +69,7 @@ export default function VerifyForm() {
   }
 
   function handleChange(index: number, raw: string) {
+    setError(null);
     const clean = raw.replace(/\D/g, "");
     if (!clean) {
       setDigits((prev) => {
@@ -50,7 +92,6 @@ export default function VerifyForm() {
       return;
     }
 
-    // Handle autofill or multi-character input
     const chars = clean.slice(0, CODE_LENGTH - index).split("");
     setDigits((prev) => {
       const next = [...prev];
@@ -92,6 +133,7 @@ export default function VerifyForm() {
 
   function handlePaste(index: number, e: ClipboardEvent<HTMLInputElement>) {
     e.preventDefault();
+    setError(null);
     const pasted = e.clipboardData.getData("text").replace(/\D/g, "");
     if (!pasted) return;
 
@@ -108,19 +150,68 @@ export default function VerifyForm() {
     focusIndex(nextFocus);
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!isComplete) return;
-    if (!getSession()) {
-      setSession("kalisa@urugero.rw", "kalisa");
+    if (submitting || !isComplete) return;
+
+    setSubmitting(true);
+    setError(null);
+    setNotice(null);
+
+    try {
+      await apiFetch<{ user: AuthUser }>("/api/v1/auth/verify", {
+        method: "POST",
+        json: {
+          identifier: identifier.trim(),
+          code,
+        },
+      });
+      clearPendingVerifyIdentifier();
+      await refreshAuth();
+      router.push("/");
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Habaye ikibazo mu kwemeza kode. Ongera ugerageze.");
+      }
+    } finally {
+      setSubmitting(false);
     }
-    router.push("/");
   }
 
-  function handleResend() {
-    setDigits(Array(CODE_LENGTH).fill(""));
-    setResent(true);
-    focusIndex(0);
+  async function handleResend() {
+    if (resending) return;
+    const trimmed = identifier.trim();
+    if (trimmed.length < 2) {
+      setError("Banza wandike imeri cyangwa telefoni wakoresheje.");
+      return;
+    }
+
+    setResending(true);
+    setError(null);
+    setNotice(null);
+
+    try {
+      const res = await apiFetch<{ ok: boolean; message: string }>(
+        "/api/v1/auth/resend-otp",
+        {
+          method: "POST",
+          json: { identifier: trimmed },
+        }
+      );
+      setDigits(Array(CODE_LENGTH).fill(""));
+      setNotice(res.message || "Kode nshya yoherejwe.");
+      focusIndex(0);
+    } catch (err) {
+      if (err instanceof ApiError) {
+        setError(err.message);
+      } else {
+        setError("Ntibyakunze kongera kohereza kode. Ongera ugerageze.");
+      }
+    } finally {
+      setResending(false);
+    }
   }
 
   return (
@@ -132,7 +223,28 @@ export default function VerifyForm() {
         wohererejwe
       </h1>
 
+      {hasPresetIdentifier && identifier ? (
+        <p className={styles.target}>
+          Kode yoherejwe kuri <strong>{identifier}</strong>.
+        </p>
+      ) : null}
+
       <form className={styles.form} onSubmit={handleSubmit} noValidate>
+        {!hasPresetIdentifier ? (
+          <Field
+            id="verify-identifier"
+            name="identifier"
+            label="Imeri cyangwa Telefoni"
+            value={identifier}
+            onChange={(v) => {
+              setIdentifier(v);
+              if (error) setError(null);
+            }}
+            placeholder="kalisa@urugero.rw"
+            autoComplete="username"
+          />
+        ) : null}
+
         <div
           className={styles.otpRow}
           role="group"
@@ -160,12 +272,18 @@ export default function VerifyForm() {
           ))}
         </div>
 
+        {error ? (
+          <p className={styles.error} role="alert">
+            {error}
+          </p>
+        ) : null}
+
         <button
           type="submit"
           className={styles.submit}
-          disabled={!isComplete}
+          disabled={!isComplete || submitting}
         >
-          Emeza
+          {submitting ? "Kwemeza…" : "Emeza"}
         </button>
       </form>
 
@@ -175,14 +293,15 @@ export default function VerifyForm() {
           type="button"
           className={styles.resendBtn}
           onClick={handleResend}
+          disabled={resending}
         >
-          Ongera wohereze
+          {resending ? "Kohereza…" : "Ongera wohereze"}
         </button>
       </p>
 
-      {resent ? (
+      {notice ? (
         <p className={styles.notice} role="status" aria-live="polite">
-          Kode nshya yoherejwe.
+          {notice}
         </p>
       ) : null}
     </div>
