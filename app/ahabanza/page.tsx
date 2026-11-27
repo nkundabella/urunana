@@ -41,10 +41,10 @@ const CATEGORIES = [
 export default function AhabanzaPage() {
   return (
     <div className={styles.page}>
-      <WovenStrip />
-      <Header variant="landing" />
+      <div className={styles.heroViewport}>
+        <WovenStrip />
+        <Header variant="landing" />
 
-      <main className={styles.main}>
         {/* 1. Hero */}
         <section className={styles.hero} aria-labelledby="hero-wordmark">
           <div className={styles.heroInner}>
@@ -54,29 +54,42 @@ export default function AhabanzaPage() {
                 src="/assets/hero-cow.jpg"
                 alt="Inka y'Inyambo n'umutako wa gakondo"
                 className={styles.cowImg}
+                style={{ height: "67vh", maxHeight: "690px", width: "auto" }}
               />
             </div>
 
-            <h1 id="hero-wordmark" className={styles.wordmark}>
-              Urunana
-            </h1>
+            <div className={styles.heroTextStack} style={{ marginTop: "-15.5vh" }}>
+              <h1
+                id="hero-wordmark"
+                className={styles.wordmark}
+                style={{
+                  fontSize: "clamp(4.75rem, 13vh, 8.5rem)",
+                  lineHeight: 0.85,
+                }}
+              >
+                Urunana
+              </h1>
 
-            <p className={styles.heroLead}>
-              Dusigasire umurage, amateka n&apos;imigenzo y&apos;Abakurambere,
-              duhe agaciro ururimi rw&apos;Ikinyarwanda no kwandika inkuru
-              z&apos;umuryango.
-            </p>
+              <p className={styles.heroLead}>
+                Dusigasire umurage, amateka n&apos;imigenzo y&apos;Abakurambere,
+                duhe agaciro ururimi rw&apos;Ikinyarwanda no kwandika inkuru
+                z&apos;umuryango.
+              </p>
 
-            <div className={styles.heroActions}>
-              <Link href="/kwiyandikisha" className={styles.btnOrange}>
-                Kwiyandikisha
-              </Link>
-              <Link href="/gushakisha" className={styles.btnOutlineCream}>
-                Gushakisha
-              </Link>
+              <div className={styles.heroActions}>
+                <Link href="/kwiyandikisha" className={styles.btnOrange}>
+                  Kwiyandikisha
+                </Link>
+                <Link href="/gushakisha" className={styles.btnOutlineCream}>
+                  Gushakisha
+                </Link>
+              </div>
             </div>
           </div>
         </section>
+      </div>
+
+      <main className={styles.main}>
 
         {/* 2. Word of the Week */}
         <section className={styles.wotwBand} aria-labelledby="home-wotw-word">
