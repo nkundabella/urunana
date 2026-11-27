@@ -1,18 +1,14 @@
+import { headers } from "next/headers";
+import { notFound } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WovenStrip from "@/components/WovenStrip";
-import ProfileView, { type ProfileData } from "@/components/ProfileView";
-import profilesData from "@/src/data/profiles.json";
-import storiesData from "@/src/data/stories.json";
-import type { StoryItem } from "@/components/StoryCard";
-import { filterVisiblePosts, type PostStatus } from "@/lib/store";
+import ProfileView from "@/components/ProfileView";
+import { serverApiFetch } from "@/lib/api";
+import type { ProfileResponse } from "@/lib/api-types";
 import styles from "./profile.module.css";
 
-type StoryRecord = StoryItem & {
-  saved?: boolean;
-  status?: PostStatus;
-  authorId?: string;
-};
+export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -20,39 +16,37 @@ type Props = {
 
 export async function generateMetadata({ params }: Props) {
   const { id } = await params;
-  const profiles = profilesData as ProfileData[];
-  const profile =
-    profiles.find((p) => p.id === id) ?? profiles[0];
-  return {
-    title: `${profile.name} — Urunana`,
-    description: profile.bio,
-  };
+  const cookieHeader = (await headers()).get("cookie");
+  try {
+    const data = await serverApiFetch<ProfileResponse>(
+      `/api/v1/users/${encodeURIComponent(id)}`,
+      cookieHeader
+    );
+    return {
+      title: `${data.user.displayName} — Urunana`,
+      description: data.user.bio || `Umwirondoro wa ${data.user.displayName} kuri Urunana.`,
+    };
+  } catch {
+    return {
+      title: "Umwirondoro — Urunana",
+      description: "Umwirondoro w'umwanditsi kuri Urunana.",
+    };
+  }
 }
 
 export default async function ProfilePage({ params }: Props) {
   const { id } = await params;
-  const profiles = profilesData as ProfileData[];
-  const stories = storiesData as StoryRecord[];
+  const cookieHeader = (await headers()).get("cookie");
 
-  const matched = profiles.find((p) => p.id === id);
-  const profile: ProfileData = matched ?? {
-    id,
-    name: "Kalisa Mugisha",
-    badge: "Umwanditsi Washinze (Founding Contributor)",
-    bio: "Umwanditsi n'umushakashatsi ku mateka y'u Rwanda, imigani y'imigenurano n'umurage w'ururimi rw'Ikinyarwanda.",
-    interests: ["Amateka n'Umurage", "Imigani"],
-    followers: null,
-    following: null,
-  };
-
-  const visibleStories = filterVisiblePosts(stories);
-  const authoredAll = visibleStories.filter(
-    (s) => s.authorId === profile.id || s.author === profile.name
-  );
-  // Display up to 2 cards cleanly by default matching the reference layout
-  const authoredStories =
-    authoredAll.length > 0 ? authoredAll.slice(0, 2) : visibleStories.slice(0, 2);
-  const savedStories = visibleStories.filter((s) => s.saved);
+  let profileData: ProfileResponse;
+  try {
+    profileData = await serverApiFetch<ProfileResponse>(
+      `/api/v1/users/${encodeURIComponent(id)}`,
+      cookieHeader
+    );
+  } catch {
+    notFound();
+  }
 
   return (
     <div className={styles.page}>
@@ -70,11 +64,7 @@ export default async function ProfilePage({ params }: Props) {
             />
           ))}
         </div>
-        <ProfileView
-          profile={profile}
-          authoredStories={authoredStories}
-          savedStories={savedStories}
-        />
+        <ProfileView initialData={profileData} />
       </main>
       <Footer />
     </div>

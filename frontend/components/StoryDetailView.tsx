@@ -3,180 +3,75 @@
 import { FormEvent, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { formatKinyarwandaDate, getStoryEdit } from "@/src/data/storyEdits";
-import { getSession } from "@/src/data/session";
+import { ApiError, apiFetch } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import {
-  addComment,
-  addCommentReply,
-  canDelete,
-  deleteComment,
-  deletePost,
-  editComment,
-  getComments,
-  getPostById,
-  hoursLeft,
-  listRemovalRequests,
-  requestRemoval,
-  toggleSavePost,
-  type PostStatus,
-  type RemovalReason,
-  type StoreComment,
-} from "@/lib/store";
-import type { StoryTag } from "./StoryCard";
+  formatKinyarwandaDate,
+  type CommentDto,
+  type CommentsResponse,
+  type PostDto,
+  type PostRemovalReason,
+} from "@/lib/api-types";
 import styles from "./StoryDetailView.module.css";
 
 type Props = {
-  routeId?: string;
-  postId: string;
-  slug: string;
-  title: string;
-  author: string;
-  authorSlug: string;
-  status: PostStatus;
-  publishedAt: string | null;
-  initialSaved?: boolean;
-  initialTags?: StoryTag[];
+  initialPost: PostDto;
+  initialComments: CommentDto[];
 };
 
-const DEFAULT_PARAGRAPHS = [
-  "Mu mateka y'u Rwanda rwo hambere, Umwami Ruganzu II Ndoli yibukwa nk'intwari yagaruye ingoma nyuma y'imyaka myinshi y'akaga n'amacakubiri. Avuye i Karagwe aho yari yarahungiye kwa nyirasenge Nyabunyana, yagarutse mu Rwanda afite icyerekezo cyo kongera guhuza abaturage.",
-  "Inkuru n'ibitekerezo by'abakurambere bigaragaza ko ubutwari bwe butari bushingiye ku rugamba gusa, ahubwo no ku buhanga bwo kunga imiryango, kubaka ubufatanye n'ibiganiro by'umuco byasigaye mu migani n'indirimbo kugeza uyu munsi.",
-];
-
 export default function StoryDetailView({
-  routeId,
-  postId,
-  slug,
-  title,
-  author,
-  authorSlug,
-  status,
-  publishedAt,
-  initialSaved = false,
-  initialTags,
+  initialPost,
+  initialComments,
 }: Props) {
   const router = useRouter();
-  const [livePostId, setLivePostId] = useState(postId);
-  const [liveSlug, setLiveSlug] = useState(slug);
-  const [displayTitle, setDisplayTitle] = useState(title);
-  const [liveAuthor, setLiveAuthor] = useState(author);
-  const [liveAuthorSlug, setLiveAuthorSlug] = useState(authorSlug);
-  const [liveTags, setLiveTags] = useState<StoryTag[] | undefined>(initialTags);
-  const [paragraphs, setParagraphs] = useState<string[]>(DEFAULT_PARAGRAPHS);
-  const [publishedLabel, setPublishedLabel] = useState("14 Ukwakira 2026");
-  const [updatedLabel, setUpdatedLabel] = useState(
-    "Yavuguruwe ku wa 18 Ukwakira 2026"
-  );
-  const [saved, setSaved] = useState(initialSaved);
+  const { user } = useAuth();
+
+  const [post, setPost] = useState<PostDto>(initialPost);
+  const [saved, setSaved] = useState(initialPost.saved);
+  const [savingBookmark, setSavingBookmark] = useState(false);
+  const [following, setFollowing] = useState(initialPost.isFollowingAuthor);
+  const [togglingFollow, setTogglingFollow] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [following, setFollowing] = useState(false);
-  const [comments, setComments] = useState<StoreComment[]>([]);
+
+  const [comments, setComments] = useState<CommentDto[]>(initialComments);
   const [draft, setDraft] = useState("");
+  const [submittingComment, setSubmittingComment] = useState(false);
   const [replyingToId, setReplyingToId] = useState<string | null>(null);
   const [replyDraft, setReplyDraft] = useState("");
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState("");
-  const [viewerName, setViewerName] = useState("Kalisa Mugisha");
-  const [viewerSlug, setViewerSlug] = useState("kalisa-mugisha");
-  const [isAuthor, setIsAuthor] = useState(false);
-  const [liveStatus, setLiveStatus] = useState<PostStatus>(status);
-  const [deletable, setDeletable] = useState(false);
-  const [remainingHours, setRemainingHours] = useState(0);
+  const [actionError, setActionError] = useState<string | null>(null);
+
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [hasPendingRemoval, setHasPendingRemoval] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [hasPendingRemoval, setHasPendingRemoval] = useState(
+    initialPost.hasPendingRemoval
+  );
   const [removalCardOpen, setRemovalCardOpen] = useState(false);
-  const [removalReason, setRemovalReason] = useState<RemovalReason | "">("");
+  const [removalReason, setRemovalReason] = useState<PostRemovalReason | "">(
+    ""
+  );
   const [removalNote, setRemovalNote] = useState("");
+  const [submittingRemoval, setSubmittingRemoval] = useState(false);
   const [removalToast, setRemovalToast] = useState(false);
 
   const deleteTriggerRef = useRef<HTMLButtonElement | null>(null);
   const cancelBtnRef = useRef<HTMLButtonElement | null>(null);
   const confirmBtnRef = useRef<HTMLButtonElement | null>(null);
 
+  const isAuthor = Boolean(user && user.id === post.author.id);
+  const isAdminOrMod = Boolean(user && (user.role === "ADMIN" || user.isModerator));
+  const deletable = isAuthor && (post.canDelete || post.status === "DRAFT");
+  const canRequestRemoval =
+    isAuthor && !post.canDelete && post.status === "PUBLISHED";
+
   useEffect(() => {
-    const lookupKey = routeId || postId || slug;
-    const storePost =
-      getPostById(lookupKey) ?? getPostById(postId) ?? getPostById(slug);
-
-    const activeId = storePost?.id ?? postId;
-    const activeSlug = storePost?.slug ?? slug;
-    const activeAuthor = storePost?.author ?? author;
-    const activeAuthorSlug =
-      storePost?.authorId ??
-      activeAuthor.toLowerCase().replace(/\s+/g, "-") ??
-      authorSlug;
-
-    setLivePostId(activeId);
-    setLiveSlug(activeSlug);
-    setLiveAuthor(activeAuthor);
-    setLiveAuthorSlug(activeAuthorSlug);
-
-    if (storePost) {
-      setDisplayTitle(storePost.title);
-      setSaved(Boolean(storePost.saved));
-      if (storePost.tags && storePost.tags.length > 0) {
-        setLiveTags(storePost.tags);
-      }
-      if (storePost.body) {
-        const nextParas = storePost.body
-          .split(/\n{2,}/)
-          .map((p) => p.trim())
-          .filter(Boolean);
-        if (nextParas.length > 0) setParagraphs(nextParas);
-      } else if (storePost.excerpt && storePost.id !== "umurage-wa-ruganzu-1") {
-        setParagraphs([storePost.excerpt, ...DEFAULT_PARAGRAPHS]);
-      }
-      if (storePost.publishedAt) {
-        const d = new Date(storePost.publishedAt);
-        if (!Number.isNaN(d.getTime())) {
-          setPublishedLabel(formatKinyarwandaDate(d));
-        }
-      }
-      if (storePost.updatedAt) {
-        const u = new Date(storePost.updatedAt);
-        if (!Number.isNaN(u.getTime())) {
-          setUpdatedLabel(`Yavuguruwe ku wa ${formatKinyarwandaDate(u)}`);
-        }
-      }
-    }
-
-    const storedEdit = getStoryEdit(activeSlug);
-    if (storedEdit) {
-      setDisplayTitle(storedEdit.title);
-      const nextParas = storedEdit.body
-        .split(/\n{2,}/)
-        .map((p) => p.trim())
-        .filter(Boolean);
-      if (nextParas.length > 0) setParagraphs(nextParas);
-      setUpdatedLabel(storedEdit.updatedLabel);
-    }
-
-    const session = getSession();
-    const currentName = session?.displayName?.trim() || "Kalisa Mugisha";
-    const currentSlug = currentName.toLowerCase().replace(/\s+/g, "-");
-    setViewerName(currentName);
-    setViewerSlug(currentSlug);
-
-    const matchesAuthor =
-      currentSlug === activeAuthorSlug ||
-      activeAuthorSlug.startsWith(currentSlug) ||
-      currentName.toLowerCase() === activeAuthor.toLowerCase();
-    setIsAuthor(matchesAuthor);
-
-    const postForGrace = storePost ?? { status, publishedAt };
-    setLiveStatus(postForGrace.status);
-    setDeletable(canDelete(postForGrace));
-    setRemainingHours(hoursLeft(postForGrace));
-
-    const pending = listRemovalRequests().some(
-      (r) =>
-        r.status === "pending" &&
-        (r.postId === activeId || r.postId === activeSlug)
-    );
-    setHasPendingRemoval(pending);
-
-    setComments(getComments(activeId));
-  }, [routeId, slug, postId, author, authorSlug, status, publishedAt]);
+    setPost(initialPost);
+    setSaved(initialPost.saved);
+    setFollowing(initialPost.isFollowingAuthor);
+    setHasPendingRemoval(initialPost.hasPendingRemoval);
+    setComments(initialComments);
+  }, [initialPost, initialComments]);
 
   useEffect(() => {
     if (!deleteModalOpen) return;
@@ -210,54 +105,126 @@ export default function StoryDetailView({
     return () => document.removeEventListener("keydown", onKeyDown);
   }, [deleteModalOpen]);
 
+  function requireLoginRedirect() {
+    router.push(`/kwinjira?next=${encodeURIComponent(`/inkuru/${post.slug}`)}`);
+  }
+
+  async function reloadComments() {
+    try {
+      const res = await apiFetch<CommentsResponse>(
+        `/api/v1/posts/${encodeURIComponent(post.id)}/comments`
+      );
+      setComments(res.comments);
+    } catch {
+      // ignore transient reload failure
+    }
+  }
+
   function closeDeleteModal() {
     setDeleteModalOpen(false);
     deleteTriggerRef.current?.focus();
   }
 
-  function handleConfirmDelete() {
-    deletePost(livePostId);
-    setDeleteModalOpen(false);
-    router.push("/ibyo-nabitse");
+  async function handleConfirmDelete() {
+    if (deleting) return;
+    setDeleting(true);
+    setActionError(null);
+    try {
+      await apiFetch<{ ok: boolean }>(`/api/v1/posts/${post.id}`, {
+        method: "DELETE",
+      });
+      setDeleteModalOpen(false);
+      router.push("/ibyo-nabitse");
+      router.refresh();
+    } catch (err) {
+      setDeleteModalOpen(false);
+      setActionError(
+        err instanceof ApiError
+          ? err.message
+          : "Ntibyakunze gusiba iyi nyandiko."
+      );
+    } finally {
+      setDeleting(false);
+    }
   }
 
-  function handleToggleSave() {
-    const updated = toggleSavePost(livePostId);
-    setSaved(updated ? Boolean(updated.saved) : !saved);
+  async function handleToggleSave() {
+    if (!user) {
+      requireLoginRedirect();
+      return;
+    }
+    if (savingBookmark) return;
+    setSavingBookmark(true);
+    setActionError(null);
+    try {
+      const res = await apiFetch<{ saved: boolean }>(
+        `/api/v1/posts/${post.id}/bookmark`,
+        { method: "POST" }
+      );
+      setSaved(res.saved);
+    } catch (err) {
+      setActionError(
+        err instanceof ApiError ? err.message : "Ntibyakunze kubika inyandiko."
+      );
+    } finally {
+      setSavingBookmark(false);
+    }
   }
 
-  function handleRemovalSubmit(e: FormEvent) {
+  async function handleToggleFollow() {
+    if (!user) {
+      requireLoginRedirect();
+      return;
+    }
+    if (togglingFollow) return;
+    setTogglingFollow(true);
+    setActionError(null);
+    try {
+      const res = await apiFetch<{ following: boolean }>(
+        `/api/v1/users/${post.author.id}/follow`,
+        { method: "POST" }
+      );
+      setFollowing(res.following);
+    } catch (err) {
+      setActionError(
+        err instanceof ApiError
+          ? err.message
+          : "Ntibyakunze guhindura gukurikira umwanditsi."
+      );
+    } finally {
+      setTogglingFollow(false);
+    }
+  }
+
+  async function handleRemovalSubmit(e: FormEvent) {
     e.preventDefault();
-    if (!removalReason) return;
-    requestRemoval({
-      postId: livePostId,
-      reason: removalReason,
-      note: removalNote,
-    });
-    setHasPendingRemoval(true);
-    setRemovalCardOpen(false);
-    setRemovalReason("");
-    setRemovalNote("");
-    setRemovalToast(true);
-    setTimeout(() => setRemovalToast(false), 3000);
+    if (!removalReason || submittingRemoval) return;
+    setSubmittingRemoval(true);
+    setActionError(null);
+    try {
+      await apiFetch(`/api/v1/posts/${post.id}/removal-requests`, {
+        method: "POST",
+        json: {
+          reason: removalReason,
+          note: removalNote.trim() || undefined,
+        },
+      });
+      setHasPendingRemoval(true);
+      setRemovalCardOpen(false);
+      setRemovalReason("");
+      setRemovalNote("");
+      setRemovalToast(true);
+      setTimeout(() => setRemovalToast(false), 3500);
+    } catch (err) {
+      setActionError(
+        err instanceof ApiError
+          ? err.message
+          : "Ntibyakunze kohereza ubusabe."
+      );
+    } finally {
+      setSubmittingRemoval(false);
+    }
   }
-
-  function isOwnComment(comment: StoreComment): boolean {
-    if (comment.deleted) return false;
-    return Boolean(
-      comment.authorId === viewerSlug ||
-        comment.author?.toLowerCase() === viewerName.toLowerCase() ||
-        comment.author === "Wowe"
-    );
-  }
-
-  const canRequestRemoval =
-    isAuthor && !deletable && liveStatus === "published";
-
-  const totalCount = comments.reduce(
-    (sum, c) => sum + (c.deleted ? 0 : 1) + c.replies.length,
-    0
-  );
 
   async function handleCopy() {
     try {
@@ -269,109 +236,185 @@ export default function StoryDetailView({
     setTimeout(() => setCopied(false), 2000);
   }
 
-  function handlePostComment(e: FormEvent) {
+  async function handlePostComment(e: FormEvent) {
     e.preventDefault();
+    if (!user) {
+      requireLoginRedirect();
+      return;
+    }
     const trimmed = draft.trim();
-    if (!trimmed) return;
-    const next = addComment(livePostId, {
-      author: viewerName,
-      authorId: viewerSlug,
-      body: trimmed,
-    });
-    if (next) setComments(next);
-    setDraft("");
+    if (!trimmed || submittingComment) return;
+    setSubmittingComment(true);
+    setActionError(null);
+    try {
+      await apiFetch(`/api/v1/posts/${post.id}/comments`, {
+        method: "POST",
+        json: { body: trimmed },
+      });
+      setDraft("");
+      await reloadComments();
+    } catch (err) {
+      setActionError(
+        err instanceof ApiError
+          ? err.message
+          : "Ntibyakunze kohereza igitekerezo."
+      );
+    } finally {
+      setSubmittingComment(false);
+    }
   }
 
-  function handleSubmitReply(e: FormEvent, commentId: string) {
+  async function handleSubmitReply(e: FormEvent, commentId: string) {
     e.preventDefault();
+    if (!user) {
+      requireLoginRedirect();
+      return;
+    }
     const trimmed = replyDraft.trim();
     if (!trimmed) return;
-    const next = addCommentReply(livePostId, commentId, {
-      author: viewerName,
-      authorId: viewerSlug,
-      role: isAuthor ? "Umwanditsi" : undefined,
-      body: trimmed,
-    });
-    if (next) setComments(next);
-    setReplyDraft("");
+    setActionError(null);
+    try {
+      await apiFetch(`/api/v1/posts/${post.id}/comments`, {
+        method: "POST",
+        json: { body: trimmed, parentId: commentId },
+      });
+      setReplyDraft("");
+      setReplyingToId(null);
+      await reloadComments();
+    } catch (err) {
+      setActionError(
+        err instanceof ApiError ? err.message : "Ntibyakunze kohereza igisubizo."
+      );
+    }
+  }
+
+  function handleStartEdit(commentId: string, body: string) {
+    setEditingCommentId(commentId);
+    setEditDraft(body);
     setReplyingToId(null);
   }
 
-  function handleStartEdit(comment: StoreComment) {
-    setEditingCommentId(comment.id);
-    setEditDraft(comment.body ?? "");
-    setReplyingToId(null);
-  }
-
-  function handleSaveEdit(e: FormEvent, commentId: string) {
+  async function handleSaveEdit(e: FormEvent, commentId: string) {
     e.preventDefault();
     const trimmed = editDraft.trim();
     if (!trimmed) return;
-    const next = editComment(livePostId, commentId, trimmed);
-    if (next) setComments(next);
-    setEditingCommentId(null);
-    setEditDraft("");
-  }
-
-  function handleDeleteComment(commentId: string) {
-    const next = deleteComment(livePostId, commentId);
-    setComments(next);
-    if (editingCommentId === commentId) {
+    setActionError(null);
+    try {
+      await apiFetch(`/api/v1/comments/${commentId}`, {
+        method: "PATCH",
+        json: { body: trimmed },
+      });
       setEditingCommentId(null);
       setEditDraft("");
+      await reloadComments();
+    } catch (err) {
+      setActionError(
+        err instanceof ApiError
+          ? err.message
+          : "Ntibyakunze guhindura igitekerezo."
+      );
     }
   }
+
+  async function handleDeleteComment(commentId: string) {
+    setActionError(null);
+    try {
+      await apiFetch(`/api/v1/comments/${commentId}`, {
+        method: "DELETE",
+      });
+      if (editingCommentId === commentId) {
+        setEditingCommentId(null);
+        setEditDraft("");
+      }
+      await reloadComments();
+    } catch (err) {
+      setActionError(
+        err instanceof ApiError
+          ? err.message
+          : "Ntibyakunze gusiba igitekerezo."
+      );
+    }
+  }
+
+  const paragraphs = (post.body || post.excerpt || "")
+    .split(/\n{2,}/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+
+  const publishedLabel = post.publishedAt
+    ? formatKinyarwandaDate(post.publishedAt)
+    : formatKinyarwandaDate(post.createdAt);
+
+  const updatedLabel =
+    post.isEdited && post.lastEditedAt
+      ? `Yavuguruwe ku wa ${formatKinyarwandaDate(post.lastEditedAt)}`
+      : null;
+
+  const totalCount = comments.reduce(
+    (sum, c) =>
+      sum +
+      (c.deleted ? 0 : 1) +
+      c.replies.filter((r) => !r.deleted).length,
+    0
+  );
+
+  const coverImage = post.images[0] || "/assets/painting.jpg";
 
   return (
     <article className={styles.container}>
       <div className={styles.tags}>
-        <span className={`${styles.tag} ${styles.tagNavy}`}>Inkuru (Story)</span>
-        {liveTags && liveTags.length > 0 ? (
-          liveTags.slice(0, 2).map((t) => (
-            <span
-              key={t.label}
-              className={`${styles.tag} ${styles.tagOrange}`}
-            >
-              {t.label}
-            </span>
-          ))
-        ) : (
-          <>
-            <span className={`${styles.tag} ${styles.tagOrange}`}>
-              Ubuvanganzo bwo mu muryango
-            </span>
-            <span className={`${styles.tag} ${styles.tagOrange}`}>
-              Amateka yanditse
-            </span>
-          </>
-        )}
+        <span className={`${styles.tag} ${styles.tagNavy}`}>
+          {post.contentTypeLabel}
+        </span>
+        {post.categories.slice(0, 2).map((cat) => (
+          <span
+            key={cat.id}
+            className={`${styles.tag} ${styles.tagOrange}`}
+          >
+            {cat.nameRw}
+          </span>
+        ))}
+        {post.knowledgeSourceLabels.slice(0, 1).map((label) => (
+          <span key={label} className={`${styles.tag} ${styles.tagOrange}`}>
+            {label}
+          </span>
+        ))}
       </div>
 
-      <h1 className={styles.title}>{displayTitle}</h1>
+      <h1 className={styles.title}>{post.title}</h1>
 
       <div className={styles.meta}>
         <Link
-          href={`/umwirondoro/${liveAuthorSlug}`}
+          href={`/umwirondoro/${post.author.username}`}
           className={styles.authorLink}
         >
-          {liveAuthor}
+          {post.author.displayName}
         </Link>
-        <span className={styles.metaDate}>Yatangiweho: {publishedLabel}</span>
-        <span className={styles.updatedPill}>{updatedLabel}</span>
+        <span className={styles.metaDate}>
+          {post.status === "DRAFT"
+            ? "Inyandiko itaratangazwa"
+            : `Yatangiweho: ${publishedLabel}`}
+        </span>
+        {updatedLabel ? (
+          <span className={styles.updatedPill}>{updatedLabel}</span>
+        ) : null}
       </div>
 
       <hr className={styles.rule} />
 
       <div className={styles.actionBar}>
         <div className={styles.actionPills}>
-          <button
-            type="button"
-            className={`${styles.pill} ${styles.pillOrange}`}
-            aria-pressed={saved}
-            onClick={handleToggleSave}
-          >
-            {saved ? "Yabitswe ✓" : "Bika inyandiko"}
-          </button>
+          {post.status === "PUBLISHED" ? (
+            <button
+              type="button"
+              className={`${styles.pill} ${styles.pillOrange}`}
+              aria-pressed={saved}
+              disabled={savingBookmark}
+              onClick={handleToggleSave}
+            >
+              {saved ? "Yabitswe ✓" : "Bika inyandiko"}
+            </button>
+          ) : null}
           <button
             type="button"
             className={`${styles.pill} ${styles.pillOutline}`}
@@ -381,13 +424,13 @@ export default function StoryDetailView({
           </button>
           {isAuthor ? (
             <Link
-              href={`/inkuru/${liveSlug}/hindura`}
+              href={`/inkuru/${post.slug}/hindura`}
               className={`${styles.pill} ${styles.pillOutline}`}
             >
               Hindura inyandiko
             </Link>
           ) : null}
-          {isAuthor && deletable ? (
+          {deletable ? (
             <button
               ref={deleteTriggerRef}
               type="button"
@@ -402,7 +445,8 @@ export default function StoryDetailView({
               type="button"
               className={`${styles.pill} ${styles.pillMaroon}`}
               aria-pressed={following}
-              onClick={() => setFollowing((prev) => !prev)}
+              disabled={togglingFollow}
+              onClick={handleToggleFollow}
             >
               {following ? "Uramukurikira" : "Kurikira Umwanditsi"}
             </button>
@@ -424,7 +468,10 @@ export default function StoryDetailView({
             </button>
           )
         ) : !isAuthor ? (
-          <Link href="/menyesha" className={styles.reportLink}>
+          <Link
+            href={`/menyesha?publicationId=${encodeURIComponent(post.id)}`}
+            className={styles.reportLink}
+          >
             Menyesha ikibazo kuri iyi nyandiko
           </Link>
         ) : null}
@@ -432,9 +479,15 @@ export default function StoryDetailView({
 
       <hr className={styles.rule} />
 
-      {isAuthor && deletable ? (
+      {actionError ? (
+        <p className={styles.removalToast} role="alert">
+          {actionError}
+        </p>
+      ) : null}
+
+      {isAuthor && post.canDelete ? (
         <p className={styles.graceNote}>
-          Ushobora kuyisiba mu masaha {remainingHours} asigaye.
+          Ushobora kuyisiba mu masaha {post.hoursLeft} asigaye.
         </p>
       ) : null}
 
@@ -463,9 +516,9 @@ export default function StoryDetailView({
               <input
                 type="radio"
                 name="removal-reason"
-                value="ikosa"
-                checked={removalReason === "ikosa"}
-                onChange={() => setRemovalReason("ikosa")}
+                value="IKOSA"
+                checked={removalReason === "IKOSA"}
+                onChange={() => setRemovalReason("IKOSA")}
               />
               <span>Ikosa ryanjye</span>
             </label>
@@ -473,9 +526,9 @@ export default function StoryDetailView({
               <input
                 type="radio"
                 name="removal-reason"
-                value="amakuru-bwite"
-                checked={removalReason === "amakuru-bwite"}
-                onChange={() => setRemovalReason("amakuru-bwite")}
+                value="AMAKURU_BWITE"
+                checked={removalReason === "AMAKURU_BWITE"}
+                onChange={() => setRemovalReason("AMAKURU_BWITE")}
               />
               <span>Amakuru bwite</span>
             </label>
@@ -483,9 +536,9 @@ export default function StoryDetailView({
               <input
                 type="radio"
                 name="removal-reason"
-                value="ikindi"
-                checked={removalReason === "ikindi"}
-                onChange={() => setRemovalReason("ikindi")}
+                value="IKINDI"
+                checked={removalReason === "IKINDI"}
+                onChange={() => setRemovalReason("IKINDI")}
               />
               <span>Ikindi</span>
             </label>
@@ -514,9 +567,9 @@ export default function StoryDetailView({
             <button
               type="submit"
               className={styles.modalConfirm}
-              disabled={!removalReason}
+              disabled={!removalReason || submittingRemoval}
             >
-              Ohereza ubusabe
+              {submittingRemoval ? "Kohereza…" : "Ohereza ubusabe"}
             </button>
           </div>
         </form>
@@ -533,29 +586,29 @@ export default function StoryDetailView({
           <div className={styles.archFrame}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
-              src="/assets/painting.jpg"
-              alt="Igishushanyo cy'abagore babiri bikoreye ibiseke"
+              src={coverImage}
+              alt={post.title}
               className={styles.archImg}
             />
           </div>
         </figure>
       </div>
 
-      <div className={styles.notice} role="note">
-        Iyi nyandiko ni ibyanditswe by&apos;umuco, si inama z&apos;umwuga
-        w&apos;ubuvuzi. (Cultural documentation, not professional advice.)
-      </div>
+      {post.isHealthOrMedicine ? (
+        <div className={styles.notice} role="note">
+          Iyi nyandiko ni ibyanditswe by&apos;umuco, si inama z&apos;umwuga
+          w&apos;ubuvuzi. (Cultural documentation, not professional advice.)
+        </div>
+      ) : null}
 
-      <section className={styles.sourceCard} aria-labelledby="source-heading">
-        <p id="source-heading" className={styles.sourceEyebrow}>
-          INKOMOKO (SOURCE NOTE)
-        </p>
-        <p className={styles.sourceText}>
-          Ibyavuye mu biganiro n&apos;abakuru b&apos;umuryango i Nyanza, hamwe
-          n&apos;igitabo &ldquo;Ibitekerezo by&apos;Abami b&apos;u Rwanda&rdquo;
-          (1998).
-        </p>
-      </section>
+      {post.sourceCitation ? (
+        <section className={styles.sourceCard} aria-labelledby="source-heading">
+          <p id="source-heading" className={styles.sourceEyebrow}>
+            INKOMOKO (SOURCE NOTE)
+          </p>
+          <p className={styles.sourceText}>{post.sourceCitation}</p>
+        </section>
+      ) : null}
 
       <section
         className={styles.commentsSection}
@@ -567,8 +620,12 @@ export default function StoryDetailView({
 
         <div className={styles.commentList}>
           {comments.map((comment) => {
-            const own = isOwnComment(comment);
-            const canRemoveComment = own || isAuthor;
+            const own = Boolean(
+              !comment.deleted && user && comment.authorId === user.id
+            );
+            const canRemoveComment = Boolean(
+              !comment.deleted && (own || isAuthor || isAdminOrMod)
+            );
             const isEditing = editingCommentId === comment.id;
             const isReplying = replyingToId === comment.id;
 
@@ -583,10 +640,11 @@ export default function StoryDetailView({
                   <>
                     <p className={styles.commentMeta}>
                       <strong className={styles.commentAuthor}>
-                        {comment.author}
+                        {comment.author?.displayName ?? "Umwanditsi"}
                       </strong>{" "}
                       <span className={styles.commentDate}>
-                        &middot; {comment.date}
+                        &middot; {formatKinyarwandaDate(comment.createdAt)}
+                        {comment.isEdited ? " (Byavuguruwe)" : ""}
                       </span>
                     </p>
 
@@ -627,6 +685,10 @@ export default function StoryDetailView({
                         type="button"
                         className={styles.commentActionBtn}
                         onClick={() => {
+                          if (!user) {
+                            requireLoginRedirect();
+                            return;
+                          }
                           setReplyingToId(isReplying ? null : comment.id);
                           setReplyDraft("");
                         }}
@@ -639,7 +701,9 @@ export default function StoryDetailView({
                           <button
                             type="button"
                             className={styles.commentActionBtn}
-                            onClick={() => handleStartEdit(comment)}
+                            onClick={() =>
+                              handleStartEdit(comment.id, comment.body)
+                            }
                           >
                             Hindura
                           </button>
@@ -659,7 +723,7 @@ export default function StoryDetailView({
                       ) : null}
                       <span aria-hidden="true">&middot;</span>
                       <Link
-                        href="/menyesha"
+                        href={`/menyesha?commentId=${encodeURIComponent(comment.id)}`}
                         className={`${styles.commentActionBtn} ${styles.commentReport}`}
                       >
                         Menyesha
@@ -701,22 +765,113 @@ export default function StoryDetailView({
 
                 {comment.replies.length > 0 && (
                   <div className={styles.replies}>
-                    {comment.replies.map((reply) => (
-                      <div key={reply.id} className={styles.reply}>
-                        <p className={styles.commentMeta}>
-                          <strong className={styles.commentAuthor}>
-                            {reply.author}
-                          </strong>
-                          {reply.role ? (
-                            <span className={styles.commentDate}>
-                              {" "}
-                              &middot; {reply.role}
-                            </span>
-                          ) : null}
-                        </p>
-                        <p className={styles.commentBody}>{reply.body}</p>
-                      </div>
-                    ))}
+                    {comment.replies.map((reply) => {
+                      const ownReply = Boolean(
+                        !reply.deleted && user && reply.authorId === user.id
+                      );
+                      const canRemoveReply = Boolean(
+                        !reply.deleted && (ownReply || isAuthor || isAdminOrMod)
+                      );
+                      const isEditingReply = editingCommentId === reply.id;
+
+                      return (
+                        <div key={reply.id} className={styles.reply}>
+                          {reply.deleted ? (
+                            <p className={styles.deletedText}>
+                              [igitekerezo cyakuweho]
+                            </p>
+                          ) : (
+                            <>
+                              <p className={styles.commentMeta}>
+                                <strong className={styles.commentAuthor}>
+                                  {reply.author?.displayName ?? "Umwanditsi"}
+                                </strong>
+                                {reply.role ? (
+                                  <span className={styles.commentDate}>
+                                    {" "}
+                                    &middot; {reply.role}
+                                  </span>
+                                ) : null}
+                                <span className={styles.commentDate}>
+                                  {" "}
+                                  &middot; {formatKinyarwandaDate(reply.createdAt)}
+                                  {reply.isEdited ? " (Byavuguruwe)" : ""}
+                                </span>
+                              </p>
+
+                              {isEditingReply ? (
+                                <form
+                                  className={styles.inlineForm}
+                                  onSubmit={(e) => handleSaveEdit(e, reply.id)}
+                                >
+                                  <input
+                                    type="text"
+                                    className={styles.inlineInput}
+                                    value={editDraft}
+                                    onChange={(e) =>
+                                      setEditDraft(e.target.value)
+                                    }
+                                    aria-label="Hindura igisubizo"
+                                  />
+                                  <div className={styles.inlineActions}>
+                                    <button
+                                      type="button"
+                                      className={styles.inlineCancel}
+                                      onClick={() => {
+                                        setEditingCommentId(null);
+                                        setEditDraft("");
+                                      }}
+                                    >
+                                      Hagarika
+                                    </button>
+                                    <button
+                                      type="submit"
+                                      className={styles.inlineSubmit}
+                                    >
+                                      Bika
+                                    </button>
+                                  </div>
+                                </form>
+                              ) : (
+                                <p className={styles.commentBody}>
+                                  {reply.body}
+                                </p>
+                              )}
+
+                              {(ownReply || canRemoveReply) && (
+                                <div className={styles.commentActions}>
+                                  {ownReply ? (
+                                    <button
+                                      type="button"
+                                      className={styles.commentActionBtn}
+                                      onClick={() =>
+                                        handleStartEdit(reply.id, reply.body)
+                                      }
+                                    >
+                                      Hindura
+                                    </button>
+                                  ) : null}
+                                  {ownReply && canRemoveReply ? (
+                                    <span aria-hidden="true">&middot;</span>
+                                  ) : null}
+                                  {canRemoveReply ? (
+                                    <button
+                                      type="button"
+                                      className={styles.commentActionBtn}
+                                      onClick={() =>
+                                        handleDeleteComment(reply.id)
+                                      }
+                                    >
+                                      Siba
+                                    </button>
+                                  ) : null}
+                                </div>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
                 )}
               </div>
@@ -734,10 +889,18 @@ export default function StoryDetailView({
             className={styles.formInput}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
-            placeholder="Andika igitekerezo cyawe..."
+            placeholder={
+              user
+                ? "Andika igitekerezo cyawe..."
+                : "Injira muri konti yawe kugira ngo utange igitekerezo..."
+            }
           />
-          <button type="submit" className={styles.submitBtn}>
-            Ohereza
+          <button
+            type="submit"
+            className={styles.submitBtn}
+            disabled={submittingComment}
+          >
+            {submittingComment ? "Kohereza…" : "Ohereza"}
           </button>
         </form>
       </section>
@@ -775,9 +938,10 @@ export default function StoryDetailView({
                 ref={confirmBtnRef}
                 type="button"
                 className={styles.modalConfirm}
+                disabled={deleting}
                 onClick={handleConfirmDelete}
               >
-                Siba inyandiko
+                {deleting ? "Gusiba…" : "Siba inyandiko"}
               </button>
             </div>
           </div>

@@ -1,23 +1,35 @@
+import { headers } from "next/headers";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WovenStrip from "@/components/WovenStrip";
 import SavedStoriesView from "@/components/SavedStoriesView";
-import storiesData from "@/src/data/stories.json";
-import type { StoryItem } from "@/components/StoryCard";
+import { serverApiFetch } from "@/lib/api";
+import type { BookmarksResponse } from "@/lib/api-types";
 import styles from "./ibyo-nabitse.module.css";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Ibyo Nabitse — Urunana",
   description: "Ibyo wabitse byose biri hano, ubisomere igihe cyose.",
 };
 
-type StoryRecord = StoryItem & {
-  saved?: boolean;
-  following?: boolean;
-};
+export default async function IbyoNabitsePage() {
+  const cookieHeader = (await headers()).get("cookie");
+  let initialData: BookmarksResponse = {
+    savedPosts: [],
+    followingPosts: [],
+    drafts: [],
+  };
 
-export default function IbyoNabitsePage() {
-  const stories = storiesData as StoryRecord[];
+  try {
+    initialData = await serverApiFetch<BookmarksResponse>(
+      "/api/v1/bookmarks",
+      cookieHeader
+    );
+  } catch {
+    initialData = { savedPosts: [], followingPosts: [], drafts: [] };
+  }
 
   return (
     <div className={styles.page}>
@@ -30,7 +42,7 @@ export default function IbyoNabitsePage() {
           <p className={styles.lead}>
             Ibyo wabitse byose biri hano, ubisomere igihe cyose.
           </p>
-          <SavedStoriesView stories={stories} />
+          <SavedStoriesView initialData={initialData} />
         </div>
       </main>
       <Footer />

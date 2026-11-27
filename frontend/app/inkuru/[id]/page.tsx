@@ -1,10 +1,14 @@
+import { headers } from "next/headers";
+import { notFound } from "next/navigation";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WovenStrip from "@/components/WovenStrip";
 import StoryDetailView from "@/components/StoryDetailView";
-import storiesData from "@/src/data/stories.json";
-import type { StorePost } from "@/lib/store";
+import { ApiError, serverApiFetch } from "@/lib/api";
+import type { CommentsResponse, PostDto } from "@/lib/api-types";
 import styles from "./story.module.css";
+
+export const dynamic = "force-dynamic";
 
 type Props = {
   params: Promise<{ id: string }>;
@@ -12,22 +16,50 @@ type Props = {
 
 export async function generateMetadata({ params }: Props) {
   const { id } = await params;
-  const stories = storiesData as StorePost[];
-  const story =
-    stories.find((s) => s.slug === id || s.id === id) ?? stories[0];
-  return {
-    title: `${story.title} — Urunana`,
-    description: story.excerpt,
-  };
+  const cookieHeader = (await headers()).get("cookie");
+  try {
+    const { post } = await serverApiFetch<{ post: PostDto }>(
+      `/api/v1/posts/${encodeURIComponent(id)}`,
+      cookieHeader
+    );
+    return {
+      title: `${post.title} — Urunana`,
+      description: post.excerpt,
+    };
+  } catch {
+    return {
+      title: "Inkuru — Urunana",
+      description: "Soma inkuru n'ibitekerezo kuri Urunana.",
+    };
+  }
 }
 
 export default async function StoryDetailPage({ params }: Props) {
   const { id } = await params;
-  const stories = storiesData as StorePost[];
-  const matched = stories.find((s) => s.slug === id || s.id === id);
-  const story = matched ?? stories[0];
+  const cookieHeader = (await headers()).get("cookie");
 
-  const authorSlug = story.authorId || story.author.toLowerCase().replace(/\s+/g, "-");
+  let post: PostDto | null = null;
+  let initialComments: CommentsResponse["comments"] = [];
+
+  try {
+    const [postRes, commentsRes] = await Promise.all([
+      serverApiFetch<{ post: PostDto }>(
+        `/api/v1/posts/${encodeURIComponent(id)}`,
+        cookieHeader
+      ),
+      serverApiFetch<CommentsResponse>(
+        `/api/v1/posts/${encodeURIComponent(id)}/comments`,
+        cookieHeader
+      ).catch(() => ({ comments: [], totalCount: 0 })),
+    ]);
+    post = postRes.post;
+    initialComments = commentsRes.comments;
+  } catch (err) {
+    if (err instanceof ApiError && err.status === 404) {
+      notFound();
+    }
+    notFound();
+  }
 
   return (
     <div className={styles.page}>
@@ -36,16 +68,8 @@ export default async function StoryDetailPage({ params }: Props) {
       <div className={styles.patternBand} aria-hidden="true" />
       <main className={styles.main}>
         <StoryDetailView
-          routeId={id}
-          postId={matched ? matched.id : id}
-          slug={matched ? matched.slug : id}
-          title={story.title}
-          author={story.author}
-          authorSlug={authorSlug}
-          status={story.status}
-          publishedAt={story.publishedAt}
-          initialSaved={Boolean(matched?.saved)}
-          initialTags={matched?.tags}
+          initialPost={post}
+          initialComments={initialComments}
         />
       </main>
       <Footer />

@@ -9,6 +9,11 @@ import fastifyStatic from "@fastify/static";
 import { env } from "./config/env.js";
 import { checkDatabaseConnection } from "./lib/prisma.js";
 import { authRoutes } from "./modules/auth/auth.routes.js";
+import { bookmarksRoutes } from "./modules/bookmarks/bookmarks.routes.js";
+import { commentsRoutes } from "./modules/comments/comments.routes.js";
+import { metadataRoutes } from "./modules/metadata/metadata.routes.js";
+import { postsRoutes } from "./modules/posts/posts.routes.js";
+import { profilesRoutes } from "./modules/profiles/profiles.routes.js";
 
 export async function buildApp() {
   const app = Fastify({
@@ -81,6 +86,11 @@ export async function buildApp() {
   });
 
   await app.register(authRoutes);
+  await app.register(metadataRoutes);
+  await app.register(postsRoutes);
+  await app.register(commentsRoutes);
+  await app.register(bookmarksRoutes);
+  await app.register(profilesRoutes);
 
   return app;
 }

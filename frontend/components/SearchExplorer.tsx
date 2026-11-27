@@ -1,87 +1,92 @@
 "use client";
 
-import { FormEvent, useEffect, useMemo, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import StoryCard, { type StoryItem } from "./StoryCard";
-import { filterVisiblePosts, getPosts, type PostStatus } from "@/lib/store";
+import StoryCard from "./StoryCard";
+import { apiFetch } from "@/lib/api";
+import {
+  postToStoryItem,
+  type PostDto,
+  type PostsListResponse,
+  type TopicCategoryDto,
+} from "@/lib/api-types";
 import styles from "./SearchExplorer.module.css";
-
-export type SearchStory = StoryItem & {
-  feed?: boolean;
-  category?: string;
-  topic?: string;
-  type?: string;
-  source?: string;
-  language?: string;
-  status?: PostStatus;
-  authorId?: string;
-};
 
 type FilterKey = "topic" | "type" | "source" | "language";
 
-const TOPIC_SLUG_MAP: Record<string, string> = {
-  "amateka-n-umurage": "Amateka n'Umurage",
-  "ururimi-rw-ikinyarwanda": "Ururimi rw'Ikinyarwanda",
-  "imigani-n-ibisakuzo": "Imigani n'Ibisakuzo",
-  "ubuvanganzo-n-inkuru": "Ubuvanganzo n'Inkuru",
-  "imigenzo-gakondo": "Imigenzo Gakondo",
+const LEGACY_TOPIC_ALIASES: Record<string, string> = {
+  "amateka-n-umurage": "history-heritage",
+  "ururimi-rw-ikinyarwanda": "kinyarwanda-language",
+  "imigani-n-ibisakuzo": "proverbs-riddles",
+  "ubuvanganzo-n-inkuru": "oral-traditions-stories",
+  "imigenzo-gakondo": "traditional-practices",
 };
 
-const FILTER_GROUPS: {
-  key: FilterKey;
+const STATIC_FILTER_GROUPS: Array<{
+  key: Exclude<FilterKey, "topic">;
   heading: string;
-  options: string[];
-}[] = [
-  {
-    key: "topic",
-    heading: "INSANGANYAMATSIKO",
-    options: [
-      "Amateka n'Umurage",
-      "Ururimi rw'Ikinyarwanda",
-      "Imigani n'Ibisakuzo",
-      "Ubuvanganzo n'Inkuru",
-      "Imigenzo Gakondo",
-    ],
-  },
+  options: Array<{ value: string; label: string }>;
+}> = [
   {
     key: "type",
     heading: "UBWOKO",
-    options: ["Inkuru", "Article"],
+    options: [
+      { value: "Inkuru", label: "Inkuru" },
+      { value: "Article", label: "Article" },
+    ],
   },
   {
     key: "source",
     heading: "INKOMOKO",
-    options: ["Personal experience", "Oral tradition"],
+    options: [
+      { value: "Personal experience", label: "Personal experience" },
+      { value: "Oral tradition", label: "Oral tradition" },
+      { value: "Researched", label: "Researched" },
+    ],
   },
   {
     key: "language",
     heading: "URURIMI",
-    options: ["Ikinyarwanda", "English"],
+    options: [
+      { value: "KINYARWANDA", label: "Ikinyarwanda" },
+      { value: "ENGLISH", label: "English" },
+      { value: "FRENCH", label: "Français" },
+      { value: "MIXED", label: "Ikinyarwanda / English" },
+    ],
   },
 ];
 
-function resolveTopicParam(raw: string | null): string | null {
+function normalizeTopicParam(raw: string | null): string | null {
   if (!raw) return null;
   const trimmed = raw.trim();
   if (!trimmed) return null;
   const lower = trimmed.toLowerCase();
-  if (TOPIC_SLUG_MAP[lower]) return TOPIC_SLUG_MAP[lower];
-  const exact = FILTER_GROUPS[0].options.find(
-    (opt) => opt.toLowerCase() === lower
-  );
-  return exact ?? null;
+  return LEGACY_TOPIC_ALIASES[lower] ?? trimmed;
 }
 
 type Props = {
-  stories: SearchStory[];
+  initialCategories?: TopicCategoryDto[];
+  initialPosts?: PostDto[];
+  initialTotal?: number;
 };
 
-export default function SearchExplorer({ stories }: Props) {
+export default function SearchExplorer({
+  initialCategories = [],
+  initialPosts = [],
+  initialTotal = 0,
+}: Props) {
   const searchParams = useSearchParams();
   const urlQ = searchParams.get("q") ?? "";
-  const urlTopic = resolveTopicParam(searchParams.get("topic"));
+  const urlTopic = normalizeTopicParam(searchParams.get("topic"));
 
-  const [allStories, setAllStories] = useState<SearchStory[]>(stories);
+  const [categories, setCategories] =
+    useState<TopicCategoryDto[]>(initialCategories);
+  const [posts, setPosts] = useState<PostDto[]>(initialPosts);
+  const [total, setTotal] = useState(initialTotal);
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(false);
+
   const [queryInput, setQueryInput] = useState(urlQ);
   const [appliedQuery, setAppliedQuery] = useState(urlQ.trim());
   const [selected, setSelected] = useState<Record<FilterKey, string[]>>({
@@ -91,13 +96,27 @@ export default function SearchExplorer({ stories }: Props) {
     language: [],
   });
 
+  const isFirstFetchRef = useRef(true);
+
   useEffect(() => {
-    setAllStories(getPosts() as SearchStory[]);
-  }, []);
+    if (categories.length > 0) return;
+    let cancelled = false;
+    apiFetch<{ categories: TopicCategoryDto[] }>("/api/v1/categories")
+      .then((res) => {
+        if (!cancelled) setCategories(res.categories);
+      })
+      .catch(() => {
+        // ignore
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [categories.length]);
 
   useEffect(() => {
     setQueryInput(urlQ);
     setAppliedQuery(urlQ.trim());
+    setPage(1);
   }, [urlQ]);
 
   useEffect(() => {
@@ -106,23 +125,83 @@ export default function SearchExplorer({ stories }: Props) {
         ...prev,
         topic: [urlTopic],
       }));
+      setPage(1);
     }
   }, [urlTopic]);
 
-  function toggleFilter(key: FilterKey, option: string) {
+  useEffect(() => {
+    const hasInitialParams = Boolean(urlQ.trim() || urlTopic);
+    if (
+      isFirstFetchRef.current &&
+      !hasInitialParams &&
+      initialPosts.length > 0 &&
+      page === 1 &&
+      !appliedQuery &&
+      Object.values(selected).every((arr) => arr.length === 0)
+    ) {
+      isFirstFetchRef.current = false;
+      return;
+    }
+    isFirstFetchRef.current = false;
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams();
+        params.set("page", String(page));
+        params.set("limit", "20");
+        if (appliedQuery) params.set("q", appliedQuery);
+        if (selected.topic.length > 0) {
+          params.set("topic", selected.topic.join(","));
+        }
+        if (selected.type.length > 0) {
+          params.set("type", selected.type.join(","));
+        }
+        if (selected.source.length > 0) {
+          params.set("source", selected.source.join(","));
+        }
+        if (selected.language.length > 0) {
+          params.set("language", selected.language.join(","));
+        }
+
+        const res = await apiFetch<PostsListResponse>(
+          `/api/v1/posts?${params.toString()}`
+        );
+        if (!cancelled) {
+          setPosts(res.posts);
+          setTotal(res.total);
+          setTotalPages(res.totalPages);
+        }
+      } catch {
+        // Keep previous state on transient network error
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }, 150);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [appliedQuery, selected, page, initialPosts.length, urlQ, urlTopic]);
+
+  function toggleFilter(key: FilterKey, value: string) {
+    setPage(1);
     setSelected((prev) => {
-      const exists = prev[key].includes(option);
+      const exists = prev[key].includes(value);
       return {
         ...prev,
         [key]: exists
-          ? prev[key].filter((v) => v !== option)
-          : [...prev[key], option],
+          ? prev[key].filter((v) => v !== value)
+          : [...prev[key], value],
       };
     });
   }
 
   function handleSearch(e: FormEvent) {
     e.preventDefault();
+    setPage(1);
     setAppliedQuery(queryInput.trim());
   }
 
@@ -130,59 +209,19 @@ export default function SearchExplorer({ stories }: Props) {
     setQueryInput("");
     setAppliedQuery("");
     setSelected({ topic: [], type: [], source: [], language: [] });
+    setPage(1);
   }
 
-  const hasFilters =
-    appliedQuery.length > 0 ||
-    Object.values(selected).some((arr) => arr.length > 0);
-
-  const results = useMemo(() => {
-    const visible = filterVisiblePosts(allStories);
-    const base = hasFilters ? visible : visible.filter((s) => s.feed !== false);
-    const q = appliedQuery.toLowerCase();
-
-    return base.filter((story) => {
-      if (q) {
-        const hay = `${story.title} ${story.excerpt} ${story.author} ${story.tags
-          .map((t) => t.label)
-          .join(" ")}`.toLowerCase();
-        if (!hay.includes(q)) return false;
-      }
-
-      for (const group of FILTER_GROUPS) {
-        const picks = selected[group.key];
-        if (picks.length > 0) {
-          if (group.key === "topic") {
-            const matchedTopic = picks.some((pick) => {
-              if (story.topic === pick || story.category === pick) return true;
-              if (
-                pick === "Ururimi rw'Ikinyarwanda" &&
-                story.category === "Ururimi"
-              ) {
-                return true;
-              }
-              if (
-                pick === "Ubuvanganzo n'Inkuru" &&
-                (story.type === "Inkuru" ||
-                  story.tags.some((t) =>
-                    t.label.toLowerCase().includes("ubuvanganzo")
-                  ))
-              ) {
-                return true;
-              }
-              return false;
-            });
-            if (!matchedTopic) return false;
-          } else {
-            const val = story[group.key];
-            if (!val || !picks.includes(val)) return false;
-          }
-        }
-      }
-
-      return true;
-    });
-  }, [allStories, hasFilters, appliedQuery, selected]);
+  const topicOptions =
+    categories.length > 0
+      ? categories.map((c) => ({ value: c.slug, label: c.nameRw }))
+      : [
+          { value: "history-heritage", label: "Amateka n'Umurage" },
+          { value: "kinyarwanda-language", label: "Ururimi rw'Ikinyarwanda" },
+          { value: "proverbs-riddles", label: "Imigani n'Ibisakuzo" },
+          { value: "oral-traditions-stories", label: "Ubuvanganzo n'Inkuru" },
+          { value: "traditional-practices", label: "Imigenzo Gakondo" },
+        ];
 
   return (
     <div className={styles.container}>
@@ -194,6 +233,7 @@ export default function SearchExplorer({ stories }: Props) {
           onChange={(e) => {
             setQueryInput(e.target.value);
             setAppliedQuery(e.target.value.trim());
+            setPage(1);
           }}
           placeholder="Shakisha ku mutwe cyangwa mu mubiri..."
           aria-label="Shakisha ku mutwe cyangwa mu mubiri"
@@ -206,21 +246,42 @@ export default function SearchExplorer({ stories }: Props) {
       <div className={styles.columns}>
         <aside className={styles.filterCard} aria-label="Guhitamo">
           <p className={styles.filterEyebrow}>GUHITAMO</p>
-          {FILTER_GROUPS.map((group) => (
+
+          <fieldset className={styles.group}>
+            <legend className={styles.groupHeading}>INSANGANYAMATSIKO</legend>
+            <div className={styles.options}>
+              {topicOptions.map((option) => {
+                const checked = selected.topic.includes(option.value);
+                return (
+                  <label key={option.value} className={styles.checkRow}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggleFilter("topic", option.value)}
+                      className={styles.checkbox}
+                    />
+                    <span className={styles.checkLabel}>{option.label}</span>
+                  </label>
+                );
+              })}
+            </div>
+          </fieldset>
+
+          {STATIC_FILTER_GROUPS.map((group) => (
             <fieldset key={group.key} className={styles.group}>
               <legend className={styles.groupHeading}>{group.heading}</legend>
               <div className={styles.options}>
                 {group.options.map((option) => {
-                  const checked = selected[group.key].includes(option);
+                  const checked = selected[group.key].includes(option.value);
                   return (
-                    <label key={option} className={styles.checkRow}>
+                    <label key={option.value} className={styles.checkRow}>
                       <input
                         type="checkbox"
                         checked={checked}
-                        onChange={() => toggleFilter(group.key, option)}
+                        onChange={() => toggleFilter(group.key, option.value)}
                         className={styles.checkbox}
                       />
-                      <span className={styles.checkLabel}>{option}</span>
+                      <span className={styles.checkLabel}>{option.label}</span>
                     </label>
                   );
                 })}
@@ -232,22 +293,56 @@ export default function SearchExplorer({ stories }: Props) {
         <section className={styles.resultsCol} aria-live="polite">
           <div className={styles.resultsHeader}>
             <p className={styles.count}>
-              {results.length} inyandiko zabonetse
+              {loading
+                ? "Gushakisha…"
+                : `${total} inyandiko zabonetse`}
             </p>
             <span className={styles.sort}>Ibishya biheruka (Chrono)</span>
           </div>
 
-          {results.length > 0 ? (
-            <div className={styles.list}>
-              {results.map((story) => (
-                <StoryCard
-                  key={story.id}
-                  story={story}
-                  variant="wide"
-                  href={`/inkuru/${story.slug || story.id}`}
-                />
-              ))}
-            </div>
+          {posts.length > 0 ? (
+            <>
+              <div className={styles.list}>
+                {posts.map((post) => (
+                  <StoryCard
+                    key={post.id}
+                    story={postToStoryItem(post)}
+                    variant="wide"
+                    href={`/inkuru/${post.slug}`}
+                  />
+                ))}
+              </div>
+              {totalPages > 1 ? (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginTop: "1.5rem",
+                  }}
+                >
+                  <button
+                    type="button"
+                    className={styles.resetBtn}
+                    disabled={page <= 1}
+                    onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  >
+                    ← Izibanza
+                  </button>
+                  <span className={styles.sort}>
+                    Urupapuro {page} / {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    className={styles.resetBtn}
+                    disabled={page >= totalPages}
+                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  >
+                    Izikurikira →
+                  </button>
+                </div>
+              ) : null}
+            </>
           ) : (
             <div className={styles.empty}>
               <p className={styles.emptyTitle}>Nta bisubizo bibonetse</p>

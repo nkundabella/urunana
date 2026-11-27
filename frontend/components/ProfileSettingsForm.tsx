@@ -1,11 +1,11 @@
 "use client";
 
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
-import { setUiLanguage, type UiLanguage } from "@/src/data/session";
+import { ApiError, apiFetch, type AuthUser, type UiLanguage } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
 import styles from "./ProfileSettingsForm.module.css";
 
 const MAX_AVATAR_BYTES = 2 * 1024 * 1024; // 2 MB
-const STORAGE_KEY = "urunana_profile_settings";
 
 type ProfileSettings = {
   displayName: string;
@@ -23,8 +23,18 @@ const DEFAULT_SETTINGS: ProfileSettings = {
   avatarUrl: "/assets/blue-baskets.jpg",
 };
 
+function parseInterestsInput(raw: string): string[] {
+  return raw
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 12);
+}
+
 export default function ProfileSettingsForm() {
+  const { user, refreshAuth } = useAuth();
   const fileInputRef = useRef<HTMLInputElement | null>(null);
+
   const [savedState, setSavedState] = useState<ProfileSettings>(DEFAULT_SETTINGS);
   const [displayName, setDisplayName] = useState("");
   const [bio, setBio] = useState("");
@@ -32,33 +42,29 @@ export default function ProfileSettingsForm() {
   const [language, setLanguage] = useState<UiLanguage>("rw");
   const [avatarUrl, setAvatarUrl] = useState("/assets/blue-baskets.jpg");
   const [avatarError, setAvatarError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
   const [statusMessage, setStatusMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as Partial<ProfileSettings>;
-      const merged: ProfileSettings = {
-        displayName: parsed.displayName ?? "",
-        bio: parsed.bio ?? "",
-        interests: parsed.interests ?? "",
-        language:
-          parsed.language === "en" || parsed.language === "fr"
-            ? parsed.language
-            : "rw",
-        avatarUrl: parsed.avatarUrl || "/assets/blue-baskets.jpg",
-      };
-      setSavedState(merged);
-      setDisplayName(merged.displayName);
-      setBio(merged.bio);
-      setInterests(merged.interests);
-      setLanguage(merged.language);
-      setAvatarUrl(merged.avatarUrl);
-    } catch {
-      // ignore invalid storage
-    }
-  }, []);
+    if (!user) return;
+    const loaded: ProfileSettings = {
+      displayName: user.displayName || "",
+      bio: user.bio || "",
+      interests: (user.areasOfInterest ?? []).join(", "),
+      language:
+        user.preferredLanguage === "en" || user.preferredLanguage === "fr"
+          ? user.preferredLanguage
+          : "rw",
+      avatarUrl: user.profilePhotoUrl || "/assets/blue-baskets.jpg",
+    };
+    setSavedState(loaded);
+    setDisplayName(loaded.displayName);
+    setBio(loaded.bio);
+    setInterests(loaded.interests);
+    setLanguage(loaded.language);
+    setAvatarUrl(loaded.avatarUrl);
+  }, [user]);
 
   function handleAvatarChange(e: ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
@@ -71,7 +77,9 @@ export default function ProfileSettingsForm() {
     }
 
     setAvatarError(null);
-    setStatusMessage(null);
+    setStatusMessage(
+      "Ifoto izabikwa ku rubuga nyuma yo guhuza serivisi yo kohereza amafoto (Milestone 4)."
+    );
     const reader = new FileReader();
     reader.onload = () => {
       if (typeof reader.result === "string") {
@@ -81,23 +89,56 @@ export default function ProfileSettingsForm() {
     reader.readAsDataURL(file);
   }
 
-  function handleSubmit(e: FormEvent) {
+  async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    const next: ProfileSettings = {
-      displayName: displayName.trim(),
-      bio: bio.trim(),
-      interests: interests.trim(),
-      language,
-      avatarUrl,
-    };
-    setSavedState(next);
-    setUiLanguage(language);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      // ignore quota errors for large base64 previews
+    if (saving) return;
+
+    const cleanName = displayName.trim();
+    if (cleanName.length < 2) {
+      setErrorMessage("Izina rigomba kuba rifite nibura inyuguti 2.");
+      return;
     }
-    setStatusMessage("Impinduka zabitswe.");
+
+    setSaving(true);
+    setErrorMessage(null);
+    setStatusMessage(null);
+
+    const parsedInterests = parseInterestsInput(interests);
+
+    try {
+      const res = await apiFetch<{ user: AuthUser }>("/api/v1/users/me", {
+        method: "PATCH",
+        json: {
+          displayName: cleanName,
+          bio: bio.trim() || null,
+          areasOfInterest: parsedInterests,
+          preferredLanguage: language,
+        },
+      });
+
+      const updated: ProfileSettings = {
+        displayName: res.user.displayName,
+        bio: res.user.bio || "",
+        interests: res.user.areasOfInterest.join(", "),
+        language:
+          res.user.preferredLanguage === "en" ||
+          res.user.preferredLanguage === "fr"
+            ? res.user.preferredLanguage
+            : "rw",
+        avatarUrl: res.user.profilePhotoUrl || avatarUrl,
+      };
+      setSavedState(updated);
+      await refreshAuth();
+      setStatusMessage("Impinduka zabitswe.");
+    } catch (err) {
+      setErrorMessage(
+        err instanceof ApiError
+          ? err.message
+          : "Ntibyakunze kubika impinduka. Ongera ugerageze."
+      );
+    } finally {
+      setSaving(false);
+    }
   }
 
   function handleCancel() {
@@ -107,6 +148,7 @@ export default function ProfileSettingsForm() {
     setLanguage(savedState.language);
     setAvatarUrl(savedState.avatarUrl);
     setAvatarError(null);
+    setErrorMessage(null);
     setStatusMessage(null);
   }
 
@@ -154,6 +196,7 @@ export default function ProfileSettingsForm() {
           onChange={(e) => {
             setDisplayName(e.target.value);
             setStatusMessage(null);
+            setErrorMessage(null);
           }}
           placeholder="Kalisa Mugisha"
         />
@@ -171,6 +214,7 @@ export default function ProfileSettingsForm() {
           onChange={(e) => {
             setBio(e.target.value);
             setStatusMessage(null);
+            setErrorMessage(null);
           }}
         />
       </div>
@@ -187,6 +231,7 @@ export default function ProfileSettingsForm() {
           onChange={(e) => {
             setInterests(e.target.value);
             setStatusMessage(null);
+            setErrorMessage(null);
           }}
           placeholder="Amateka, imigani..."
         />
@@ -204,6 +249,7 @@ export default function ProfileSettingsForm() {
             onChange={(e) => {
               setLanguage(e.target.value as UiLanguage);
               setStatusMessage(null);
+              setErrorMessage(null);
             }}
           >
             <option value="rw">Ikinyarwanda</option>
@@ -224,13 +270,20 @@ export default function ProfileSettingsForm() {
         </div>
       </div>
 
+      {errorMessage ? (
+        <p className={styles.error} role="alert">
+          {errorMessage}
+        </p>
+      ) : null}
+
       <div className={styles.actions}>
-        <button type="submit" className={styles.primaryBtn}>
-          Bika impinduka
+        <button type="submit" className={styles.primaryBtn} disabled={saving}>
+          {saving ? "Kubika…" : "Bika impinduka"}
         </button>
         <button
           type="button"
           className={styles.outlineBtn}
+          disabled={saving}
           onClick={handleCancel}
         >
           Hagarika

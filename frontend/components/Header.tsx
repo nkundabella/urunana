@@ -195,7 +195,7 @@ export default function Header({ variant = "C", notificationCount }: Props) {
           </div>
 
           <Link
-            href="/umwirondoro"
+            href={`/umwirondoro/${user.username}`}
             role="menuitem"
             className={styles.accountItem}
             onClick={() => setAccountMenuOpen(false)}

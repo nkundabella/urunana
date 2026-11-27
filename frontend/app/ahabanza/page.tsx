@@ -1,8 +1,13 @@
 import Link from "next/link";
+import { headers } from "next/headers";
 import Header from "@/components/Header";
 import Footer from "@/components/Footer";
 import WovenStrip from "@/components/WovenStrip";
+import { serverApiFetch } from "@/lib/api";
+import type { HomeResponse, PostDto, TopicCategoryDto } from "@/lib/api-types";
 import styles from "./ahabanza.module.css";
+
+export const dynamic = "force-dynamic";
 
 export const metadata = {
   title: "Urunana — Umuco n'Ururimi",
@@ -10,35 +15,39 @@ export const metadata = {
     "Dusigasire umurage, amateka n'imigenzo y'Abakurambere, duhe agaciro ururimi rw'Ikinyarwanda no kwandika inkuru z'umuryango.",
 };
 
-const CATEGORIES = [
-  {
-    label: "Amateka\nn'Umurage",
-    slug: "amateka-n-umurage",
-    cropClass: styles.catCrop1,
-  },
-  {
-    label: "Ururimi\nrw'Ikinyarwanda",
-    slug: "ururimi-rw-ikinyarwanda",
-    cropClass: styles.catCrop2,
-  },
-  {
-    label: "Imigani\nn'Ibisakuzo",
-    slug: "imigani-n-ibisakuzo",
-    cropClass: styles.catCrop3,
-  },
-  {
-    label: "Ubuvanganzo\nn'Inkuru",
-    slug: "ubuvanganzo-n-inkuru",
-    cropClass: styles.catCrop4,
-  },
-  {
-    label: "Imigenzo\nGakondo",
-    slug: "imigenzo-gakondo",
-    cropClass: styles.catCrop5,
-  },
-] as const;
+const CROP_CLASSES = [
+  styles.catCrop1,
+  styles.catCrop2,
+  styles.catCrop3,
+  styles.catCrop4,
+  styles.catCrop5,
+];
 
-export default function AhabanzaPage() {
+const FALLBACK_CATEGORIES: Array<{ slug: string; nameRw: string }> = [
+  { slug: "history-heritage", nameRw: "Amateka n'Umurage" },
+  { slug: "kinyarwanda-language", nameRw: "Ururimi rw'Ikinyarwanda" },
+  { slug: "proverbs-riddles", nameRw: "Imigani n'Ibisakuzo" },
+  { slug: "oral-traditions-stories", nameRw: "Ubuvanganzo n'Inkuru" },
+  { slug: "traditional-practices", nameRw: "Imigenzo Gakondo" },
+];
+
+export default async function AhabanzaPage() {
+  const cookieHeader = (await headers()).get("cookie");
+  let home: HomeResponse | null = null;
+
+  try {
+    home = await serverApiFetch<HomeResponse>("/api/v1/home", cookieHeader);
+  } catch {
+    home = null;
+  }
+
+  const wotw = home?.wordOfTheWeek;
+  const displayCategories: Array<Pick<TopicCategoryDto, "slug" | "nameRw">> =
+    home && home.categories.length > 0
+      ? home.categories.slice(0, 5)
+      : FALLBACK_CATEGORIES;
+  const featuredStories: PostDto[] = (home?.featuredStories ?? []).slice(0, 2);
+
   return (
     <div className={styles.page}>
       <div className={styles.heroViewport}>
@@ -90,7 +99,6 @@ export default function AhabanzaPage() {
       </div>
 
       <main className={styles.main}>
-
         {/* 2. Word of the Week */}
         <section className={styles.wotwBand} aria-labelledby="home-wotw-word">
           <div className={styles.wotwCard}>
@@ -98,16 +106,20 @@ export default function AhabanzaPage() {
               IJAMBO RY&apos;ICYUMWERU &middot; WORD OF THE WEEK
             </p>
             <h2 id="home-wotw-word" className={styles.wotwWord}>
-              Urunana
+              {wotw?.word || "Urunana"}
             </h2>
-            <p className={styles.wotwPhonetic}>[u-ru-na-na]</p>
+            <p className={styles.wotwPhonetic}>
+              [{wotw?.pronunciation || "u-ru-na-na"}]
+            </p>
             <p className={styles.wotwDef}>
-              Urunana ni isano rikomeye cyangwa umurongo w&apos;abantu bafatanye
-              mu gushyigikirana no guhuriza hamwe imbaraga.
+              {wotw?.explanationRw ||
+                "Urunana ni isano rikomeye cyangwa umurongo w'abantu bafatanye mu gushyigikirana no guhuriza hamwe imbaraga."}
             </p>
             <p className={styles.wotwNote}>
-              Urugero: &ldquo;Urunana rw&apos;Abanyarwanda ni rwo rwatugize abo
-              turi bo uyu munsi.&rdquo;
+              Urugero: &ldquo;
+              {wotw?.exampleSentenceRw ||
+                "Urunana rw'Abanyarwanda ni rwo rwatugize abo turi bo uyu munsi."}
+              &rdquo;
             </p>
           </div>
         </section>
@@ -115,16 +127,18 @@ export default function AhabanzaPage() {
         {/* 3. Categories */}
         <section className={styles.creamSection} aria-labelledby="doors-heading">
           <div className={styles.container}>
-            <p className={styles.sectionEyebrowCenter}>IBYICIRO BY&apos;UBUMENYI</p>
+            <p className={styles.sectionEyebrowCenter}>
+              IBYICIRO BY&apos;UBUMENYI
+            </p>
             <h2 id="doors-heading" className={styles.doorsHeading}>
               Hitamo urugi winjiremo
             </h2>
 
             <div className={styles.categoriesGrid}>
-              {CATEGORIES.map((cat) => (
+              {displayCategories.map((cat, idx) => (
                 <Link
                   key={cat.slug}
-                  href={`/gushakisha?topic=${cat.slug}`}
+                  href={`/gushakisha?topic=${encodeURIComponent(cat.slug)}`}
                   className={styles.catItem}
                 >
                   <div className={styles.catCircle}>
@@ -132,10 +146,10 @@ export default function AhabanzaPage() {
                     <img
                       src="/assets/baskets-wall.jpg"
                       alt=""
-                      className={`${styles.catImg} ${cat.cropClass}`}
+                      className={`${styles.catImg} ${CROP_CLASSES[idx % CROP_CLASSES.length]}`}
                     />
                   </div>
-                  <span className={styles.catLabel}>{cat.label}</span>
+                  <span className={styles.catLabel}>{cat.nameRw}</span>
                 </Link>
               ))}
             </div>
@@ -145,61 +159,48 @@ export default function AhabanzaPage() {
             {/* 4. Featured Stories */}
             <p className={styles.sectionEyebrow}>INKURU ZATORANYIJWE</p>
             <div className={styles.storiesGrid}>
-              <Link
-                href="/inkuru/umurage-wa-ruganzu-ii-ndoli"
-                className={styles.storyLink}
-              >
-                <div className={styles.archFrame}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/assets/painting.jpg"
-                    alt="Igishushanyo cy'abagore babiri bikoreye ibiseke"
-                    className={styles.storyImg}
-                  />
-                </div>
-                <p className={styles.storyTagOrange}>
-                  UBUVANGANZO BWO MU MURYANGO &middot; AMATEKA YANDITSE
-                </p>
-                <h3 className={styles.storyTitle}>
-                  Umurage wa Ruganzu II Ndoli n&apos;Inzira y&apos;Ubutwari mu
-                  Mateka y&apos;u Rwanda
-                </h3>
-                <p className={styles.storyExcerpt}>
-                  Amateka n&apos;ibitekerezo bya kera bigaragaza ubutwari bwa
-                  Ruganzu Ndoli n&apos;uko yagaruye ingoma.
-                </p>
-                <p className={styles.storyMeta}>
-                  <strong>Kalisa Mugisha</strong> &middot; 2 ibitekerezo
-                </p>
-              </Link>
+              {featuredStories.map((story, idx) => {
+                const isFirst = idx === 0;
+                const coverSrc =
+                  story.images[0] ||
+                  (isFirst ? "/assets/painting.jpg" : "/assets/pattern-bw.jpg");
+                const tagLine = [
+                  story.categories[0]?.nameRw?.toUpperCase(),
+                  story.contentLanguageLabel?.toUpperCase(),
+                ]
+                  .filter(Boolean)
+                  .join(" · ");
 
-              <Link
-                href="/inkuru/wisdom-of-unity-imigani"
-                className={styles.storyLink}
-              >
-                <div className={styles.rectFrame}>
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src="/assets/pattern-bw.jpg"
-                    alt="Imitako y'umukara n'umweru y'Imigongo"
-                    className={styles.storyImg}
-                  />
-                </div>
-                <p className={styles.storyTagNavy}>
-                  IMIGANI N&apos;IBISAKUZO &middot; ENGLISH
-                </p>
-                <h3 className={styles.storyTitle}>
-                  Wisdom of Unity in Ancient Rwandan Proverbs (Imigani
-                  y&apos;Imigenurano)
-                </h3>
-                <p className={styles.storyExcerpt}>
-                  Uko imigani ya kera yigisha ubumwe, ubwubahane n&apos;ubufatanye
-                  mu muryango Nyarwanda.
-                </p>
-                <p className={styles.storyMeta}>
-                  <strong>Kalisa Mugisha</strong> &middot; 7 ibitekerezo
-                </p>
-              </Link>
+                return (
+                  <Link
+                    key={story.id}
+                    href={`/inkuru/${story.slug}`}
+                    className={styles.storyLink}
+                  >
+                    <div className={isFirst ? styles.archFrame : styles.rectFrame}>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={coverSrc}
+                        alt={story.title}
+                        className={styles.storyImg}
+                      />
+                    </div>
+                    <p
+                      className={
+                        isFirst ? styles.storyTagOrange : styles.storyTagNavy
+                      }
+                    >
+                      {tagLine || "UMUCO N'URURIMI"}
+                    </p>
+                    <h3 className={styles.storyTitle}>{story.title}</h3>
+                    <p className={styles.storyExcerpt}>{story.excerpt}</p>
+                    <p className={styles.storyMeta}>
+                      <strong>{story.author.displayName}</strong> &middot;{" "}
+                      {story.commentCount} ibitekerezo
+                    </p>
+                  </Link>
+                );
+              })}
             </div>
           </div>
         </section>

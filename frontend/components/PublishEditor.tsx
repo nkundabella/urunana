@@ -2,183 +2,111 @@
 
 import { ChangeEvent, FormEvent, useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { getStoryEdit, saveStoryEdit } from "@/src/data/storyEdits";
-import { getSession } from "@/src/data/session";
-import {
-  getPostById,
-  getPosts,
-  publishPost,
-  saveDraft,
-  slugifyTitle,
-  updatePost,
-  type PostStatus,
-} from "@/lib/store";
-import type { StoryTag } from "./StoryCard";
+import { ApiError, apiFetch } from "@/lib/api";
+import type {
+  ContentLanguage,
+  ContentType,
+  KnowledgeSourceType,
+  PostDto,
+  TopicCategoryDto,
+} from "@/lib/api-types";
 import styles from "./PublishEditor.module.css";
 
-const CONTENT_TYPES = [
-  "Inkuru (Story)",
-  "Article",
-  "Umugani (Proverb)",
-  "Ikiganiro (Discussion)",
+const CONTENT_TYPE_OPTIONS: Array<{ value: ContentType; label: string }> = [
+  { value: "STORY", label: "Inkuru (Story)" },
+  { value: "ARTICLE", label: "Article" },
+  { value: "ORAL_TRADITION", label: "Ubuvanganzo Nyemvugo (Oral tradition)" },
+  { value: "LANGUAGE_EXPLANATION", label: "Umugani / Ururimi (Language)" },
+  { value: "PERSONAL_EXPERIENCE", label: "Ubuhamya Bwite (Personal experience)" },
+  { value: "INTERVIEW", label: "Ikiganiro (Interview / Discussion)" },
+  { value: "RESEARCH_PIECE", label: "Ubushakashatsi (Research)" },
+  { value: "OPINION_INTERPRETATION", label: "Igitekerezo (Interpretation)" },
+  { value: "EVENT_NOTICE", label: "Itangazo ry'Igikorwa (Event notice)" },
 ];
 
-const SOURCES = [
-  "Personal experience",
-  "Family story / oral tradition",
-  "Researched",
-  "Interpretation",
+const SOURCE_OPTIONS: Array<{ value: KnowledgeSourceType; label: string }> = [
+  { value: "PERSONAL_EXPERIENCE", label: "Personal experience" },
+  { value: "FAMILY_ORAL_TRADITION", label: "Family story / oral tradition" },
+  { value: "COMMUNITY_PRACTICE", label: "Community practice" },
+  { value: "DOCUMENTED_HISTORY", label: "Documented history" },
+  { value: "RESEARCH_BASED", label: "Researched" },
+  { value: "INTERVIEW_BASED", label: "Interview" },
+  { value: "INTERPRETATION_OPINION", label: "Interpretation" },
 ];
 
-const TOPICS = [
-  "History & heritage",
-  "Kinyarwanda language",
-  "Proverbs & riddles",
-  "Oral traditions",
-  "Traditional practices",
-  "Music & dance",
-  "Food",
-  "Clothing",
-  "Traditional knowledge",
-  "Cultural events",
-  "Contemporary life",
+const LANGUAGE_OPTIONS: Array<{ value: ContentLanguage; label: string }> = [
+  { value: "KINYARWANDA", label: "Ikinyarwanda" },
+  { value: "ENGLISH", label: "English" },
+  { value: "FRENCH", label: "Français" },
+  { value: "MIXED", label: "Ikinyarwanda / English (Mixed)" },
 ];
-
-const LANGUAGES = ["Ikinyarwanda", "English", "Français"];
-
-function mapTopicAndCategory(selectedTopic?: string): {
-  topic: string;
-  category: string;
-} {
-  switch (selectedTopic) {
-    case "Kinyarwanda language":
-      return { topic: "Ururimi rw'Ikinyarwanda", category: "Ururimi" };
-    case "Proverbs & riddles":
-      return {
-        topic: "Imigani n'Ibisakuzo",
-        category: "Imigani n'Ibisakuzo",
-      };
-    case "Traditional practices":
-    case "Music & dance":
-    case "Food":
-    case "Clothing":
-    case "Traditional knowledge":
-    case "Cultural events":
-      return { topic: "Imigenzo Gakondo", category: "Imigenzo Gakondo" };
-    case "Contemporary life":
-      return { topic: "Ubuvanganzo n'Inkuru", category: "Amateka n'Umurage" };
-    default:
-      return { topic: "Amateka n'Umurage", category: "Amateka n'Umurage" };
-  }
-}
-
-function normalizeType(contentType: string): string {
-  return contentType.toLowerCase().includes("article") ? "Article" : "Inkuru";
-}
-
-function normalizeSource(source?: string): string {
-  if (!source) return "Oral tradition";
-  return source.toLowerCase().includes("personal")
-    ? "Personal experience"
-    : "Oral tradition";
-}
-
-function buildTags(
-  topicLabel: string,
-  sourceLabel: string,
-  language: string
-): StoryTag[] {
-  return [
-    { label: topicLabel, tone: "orange" },
-    { label: sourceLabel, tone: "sand" },
-    { label: language, tone: "ink" },
-  ];
-}
-
-export type EditorInitialValues = {
-  title: string;
-  body: string;
-  contentType: string;
-  sources: string[];
-  topics: string[];
-  language: string;
-};
 
 type Props = {
-  storySlug?: string;
-  postStatus?: PostStatus;
-  initialValues?: EditorInitialValues;
+  initialPost?: PostDto;
+  initialCategories?: TopicCategoryDto[];
   submitLabel?: string;
 };
 
 export default function PublishEditor({
-  storySlug,
-  postStatus = "draft",
-  initialValues,
+  initialPost,
+  initialCategories = [],
   submitLabel = "Tangaza",
 }: Props) {
   const router = useRouter();
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const draftIdRef = useRef<string | undefined>(storySlug);
+  const draftIdRef = useRef<string | undefined>(initialPost?.id);
 
-  const [title, setTitle] = useState(initialValues?.title ?? "");
-  const [body, setBody] = useState(initialValues?.body ?? "");
-  const [contentType, setContentType] = useState(
-    initialValues?.contentType ?? CONTENT_TYPES[0]
+  const [categories, setCategories] =
+    useState<TopicCategoryDto[]>(initialCategories);
+  const [title, setTitle] = useState(
+    initialPost?.title === "Inyandiko itaratangazwa"
+      ? ""
+      : (initialPost?.title ?? "")
   );
-  const [sources, setSources] = useState<string[]>(initialValues?.sources ?? []);
-  const [topics, setTopics] = useState<string[]>(initialValues?.topics ?? []);
-  const [language, setLanguage] = useState(
-    initialValues?.language ?? LANGUAGES[0]
+  const [body, setBody] = useState(initialPost?.body ?? "");
+  const [contentType, setContentType] = useState<ContentType>(
+    initialPost?.contentType ?? "STORY"
   );
-  const [livePostStatus, setLivePostStatus] = useState<PostStatus>(postStatus);
-  const [researchConsent, setResearchConsent] = useState(false);
+  const [sources, setSources] = useState<KnowledgeSourceType[]>(
+    initialPost?.knowledgeSources ?? []
+  );
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState<string[]>(
+    initialPost?.categories.map((c) => c.id) ?? []
+  );
+  const [language, setLanguage] = useState<ContentLanguage>(
+    initialPost?.contentLanguage ?? "KINYARWANDA"
+  );
+  const [sourceCitation, setSourceCitation] = useState(
+    initialPost?.sourceCitation ?? ""
+  );
+  const [researchConsent, setResearchConsent] = useState(
+    initialPost?.researchUseConsent ?? false
+  );
+
+  const [savingDraft, setSavingDraft] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [published, setPublished] = useState(false);
   const [draftToast, setDraftToast] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  const showDraftButton = livePostStatus !== "published";
+  const isEditingPublished = initialPost?.status === "PUBLISHED";
+  const showDraftButton = !isEditingPublished;
 
   useEffect(() => {
-    if (!storySlug) return;
-    const storePost = getPostById(storySlug);
-    if (storePost) {
-      draftIdRef.current = storePost.id;
-      setLivePostStatus(storePost.status);
-      if (storePost.title) setTitle(storePost.title);
-      if (storePost.body) setBody(storePost.body);
-      if (storePost.language && LANGUAGES.includes(storePost.language)) {
-        setLanguage(storePost.language);
-      }
-      if (storePost.source) {
-        const matchedSource = SOURCES.find((s) =>
-          s.toLowerCase().includes(storePost.source!.toLowerCase().split(" ")[0])
-        );
-        if (matchedSource) setSources([matchedSource]);
-      }
-      if (storePost.topic) {
-        const matchedTopic =
-          storePost.topic === "Ururimi rw'Ikinyarwanda"
-            ? "Kinyarwanda language"
-            : storePost.topic === "Imigani n'Ibisakuzo"
-              ? "Proverbs & riddles"
-              : storePost.topic === "Imigenzo Gakondo"
-                ? "Traditional practices"
-                : "History & heritage";
-        setTopics([matchedTopic]);
-      }
-    }
-
-    const saved = getStoryEdit(storySlug);
-    if (saved) {
-      setTitle(saved.title);
-      setBody(saved.body);
-      setContentType(saved.contentType);
-      setSources(saved.sources);
-      setTopics(saved.topics);
-      setLanguage(saved.language);
-    }
-  }, [storySlug]);
+    if (categories.length > 0) return;
+    let cancelled = false;
+    apiFetch<{ categories: TopicCategoryDto[] }>("/api/v1/categories")
+      .then((res) => {
+        if (!cancelled) setCategories(res.categories);
+      })
+      .catch(() => {
+        // ignore
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [categories.length]);
 
   const titleLen = title.trim().length;
   const bodyLen = body.trim().length;
@@ -188,12 +116,12 @@ export default function PublishEditor({
     bodyLen >= 100 &&
     bodyLen <= 20000 &&
     sources.length >= 1 &&
-    topics.length >= 1;
+    selectedCategoryIds.length >= 1;
 
-  function toggleItem(
-    list: string[],
-    value: string,
-    setter: (v: string[]) => void
+  function toggleValue<T extends string>(
+    list: T[],
+    value: T,
+    setter: (v: T[]) => void
   ) {
     setter(
       list.includes(value)
@@ -225,108 +153,107 @@ export default function PublishEditor({
     e.target.value = "";
   }
 
-  function getCurrentAuthor() {
-    const session = getSession();
-    const author = session?.displayName?.trim() || "Kalisa Mugisha";
-    const authorId = author.toLowerCase().replace(/\s+/g, "-");
-    return { author, authorId };
-  }
-
-  function handleSaveDraft() {
-    const { author, authorId } = getCurrentAuthor();
-    const { topic, category } = mapTopicAndCategory(topics[0]);
-    const normalizedSource = normalizeSource(sources[0]);
-    const safeTitle = title.trim() || "Inyandiko itaratangazwa";
-
-    const saved = saveDraft({
-      id: draftIdRef.current,
-      slug: storySlug,
-      title: safeTitle,
-      body,
-      excerpt: body.trim().slice(0, 160),
-      author,
-      authorId,
-      type: normalizeType(contentType),
-      source: normalizedSource,
-      topic,
-      category,
-      language,
-      feed: true,
-      tags: buildTags(topic, normalizedSource, language),
-    });
-    draftIdRef.current = saved.id;
-    setDraftToast(true);
-    setTimeout(() => setDraftToast(false), 2500);
-  }
-
-  function handleSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (!isValid) return;
-
-    const cleanTitle = title.trim();
-    const cleanBody = body.trim();
-    const { author, authorId } = getCurrentAuthor();
-    const { topic, category } = mapTopicAndCategory(topics[0]);
-    const normalizedSource = normalizeSource(sources[0]);
-    const normalizedType = normalizeType(contentType);
-    const tags = buildTags(topic, normalizedSource, language);
-
-    if (storySlug && livePostStatus === "published") {
-      updatePost(storySlug, {
-        title: cleanTitle,
-        body: cleanBody,
-        excerpt: cleanBody.slice(0, 160),
-        type: normalizedType,
-        source: normalizedSource,
-        topic,
-        category,
-        language,
-        tags,
+  async function handleSaveDraft() {
+    if (savingDraft || submitting) return;
+    setSavingDraft(true);
+    setFormError(null);
+    try {
+      const res = await apiFetch<{ post: PostDto }>("/api/v1/posts/drafts", {
+        method: "POST",
+        json: {
+          ...(draftIdRef.current ? { id: draftIdRef.current } : {}),
+          title: title.trim(),
+          body,
+          contentType,
+          knowledgeSources: sources,
+          categoryIds: selectedCategoryIds,
+          contentLanguage: language,
+          sourceCitation: sourceCitation.trim() || null,
+          hostingLicenseGranted: true,
+          researchUseConsent: researchConsent,
+        },
       });
-      saveStoryEdit(storySlug, {
-        title: cleanTitle,
-        body: cleanBody,
-        contentType,
-        sources,
-        topics,
-        language,
-      });
-      setPublished(true);
-      setTimeout(() => {
-        router.push(`/inkuru/${storySlug}`);
-      }, 450);
-      return;
+      draftIdRef.current = res.post.id;
+      setDraftToast(true);
+      setTimeout(() => setDraftToast(false), 2500);
+    } catch (err) {
+      setFormError(
+        err instanceof ApiError
+          ? err.message
+          : "Ntibyakunze kubika inyandiko itaratangazwa."
+      );
+    } finally {
+      setSavingDraft(false);
     }
+  }
 
-    const generatedSlug = slugifyTitle(
-      cleanTitle,
-      getPosts(),
-      draftIdRef.current ?? null
-    );
-    const saved = saveDraft({
-      id: draftIdRef.current,
-      slug: generatedSlug,
-      title: cleanTitle,
-      body: cleanBody,
-      excerpt: cleanBody.slice(0, 160),
-      author,
-      authorId,
-      type: normalizedType,
-      source: normalizedSource,
-      topic,
-      category,
-      language,
-      feed: true,
-      tags,
-    });
-    draftIdRef.current = saved.id;
-    const publishedPost = publishPost(saved.id);
-    const targetSlug = publishedPost?.slug ?? saved.slug;
+  async function handleSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (!isValid || submitting) return;
 
-    setPublished(true);
-    setTimeout(() => {
-      router.push(`/inkuru/${targetSlug}`);
-    }, 450);
+    setSubmitting(true);
+    setFormError(null);
+
+    const payload = {
+      title: title.trim(),
+      body: body.trim(),
+      contentType,
+      knowledgeSources: sources,
+      categoryIds: selectedCategoryIds,
+      contentLanguage: language,
+      sourceCitation: sourceCitation.trim() || null,
+      hostingLicenseGranted: true,
+      researchUseConsent: researchConsent,
+    };
+
+    try {
+      if (isEditingPublished && initialPost) {
+        const res = await apiFetch<{ post: PostDto }>(
+          `/api/v1/posts/${initialPost.id}`,
+          {
+            method: "PATCH",
+            json: payload,
+          }
+        );
+        setPublished(true);
+        router.push(`/inkuru/${res.post.slug}`);
+        router.refresh();
+        return;
+      }
+
+      let targetDraftId = draftIdRef.current;
+      if (!targetDraftId) {
+        const created = await apiFetch<{ post: PostDto }>(
+          "/api/v1/posts/drafts",
+          {
+            method: "POST",
+            json: payload,
+          }
+        );
+        targetDraftId = created.post.id;
+        draftIdRef.current = targetDraftId;
+      }
+
+      const publishedRes = await apiFetch<{ post: PostDto }>(
+        `/api/v1/posts/${targetDraftId}/publish`,
+        {
+          method: "POST",
+          json: payload,
+        }
+      );
+
+      setPublished(true);
+      router.push(`/inkuru/${publishedRes.post.slug}`);
+      router.refresh();
+    } catch (err) {
+      setFormError(
+        err instanceof ApiError
+          ? err.message
+          : "Habaye ikibazo mu gutangaza inyandiko. Ongera ugerageze."
+      );
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
@@ -420,7 +347,8 @@ export default function PublishEditor({
             </div>
 
             <p className={styles.helper}>
-              Inama: tangira n&apos;inkuru wumvise ku muryango.
+              Inama: tangira n&apos;inkuru wumvise ku muryango. ({bodyLen}{" "}
+              inyuguti)
             </p>
           </div>
         </section>
@@ -435,11 +363,11 @@ export default function PublishEditor({
               id="content-type"
               className={styles.select}
               value={contentType}
-              onChange={(e) => setContentType(e.target.value)}
+              onChange={(e) => setContentType(e.target.value as ContentType)}
             >
-              {CONTENT_TYPES.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
+              {CONTENT_TYPE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
                 </option>
               ))}
             </select>
@@ -450,15 +378,17 @@ export default function PublishEditor({
               INKOMOKO (SOURCE &middot; BYIBURA 1)
             </legend>
             <div className={styles.sourceList}>
-              {SOURCES.map((source) => (
-                <label key={source} className={styles.sourceRow}>
+              {SOURCE_OPTIONS.map((source) => (
+                <label key={source.value} className={styles.sourceRow}>
                   <input
                     type="checkbox"
                     className={styles.sourceCheck}
-                    checked={sources.includes(source)}
-                    onChange={() => toggleItem(sources, source, setSources)}
+                    checked={sources.includes(source.value)}
+                    onChange={() =>
+                      toggleValue(sources, source.value, setSources)
+                    }
                   />
-                  <span className={styles.sourceText}>{source}</span>
+                  <span className={styles.sourceText}>{source.label}</span>
                 </label>
               ))}
             </div>
@@ -469,20 +399,26 @@ export default function PublishEditor({
               INSANGANYAMATSIKO (TOPIC &middot; BYIBURA 1)
             </legend>
             <div className={styles.topicChips}>
-              {TOPICS.map((topic) => {
-                const checked = topics.includes(topic);
+              {categories.map((cat) => {
+                const checked = selectedCategoryIds.includes(cat.id);
                 return (
                   <label
-                    key={topic}
+                    key={cat.id}
                     className={`${styles.topicChip}${checked ? ` ${styles.topicChipActive}` : ""}`}
                   >
                     <input
                       type="checkbox"
                       className={styles.topicCheck}
                       checked={checked}
-                      onChange={() => toggleItem(topics, topic, setTopics)}
+                      onChange={() =>
+                        toggleValue(
+                          selectedCategoryIds,
+                          cat.id,
+                          setSelectedCategoryIds
+                        )
+                      }
                     />
-                    <span>{topic}</span>
+                    <span>{cat.nameRw}</span>
                   </label>
                 );
               })}
@@ -497,14 +433,29 @@ export default function PublishEditor({
               id="story-language"
               className={styles.select}
               value={language}
-              onChange={(e) => setLanguage(e.target.value)}
+              onChange={(e) => setLanguage(e.target.value as ContentLanguage)}
             >
-              {LANGUAGES.map((opt) => (
-                <option key={opt} value={opt}>
-                  {opt}
+              {LANGUAGE_OPTIONS.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
                 </option>
               ))}
             </select>
+          </div>
+
+          <div className={styles.metaGroup}>
+            <label htmlFor="source-citation" className={styles.label}>
+              IBISOBANURO BY&apos;INKOMOKO (OPTIONAL)
+            </label>
+            <input
+              id="source-citation"
+              type="text"
+              className={styles.input}
+              value={sourceCitation}
+              onChange={(e) => setSourceCitation(e.target.value)}
+              placeholder="Urugero: Byabwiwe sekuru i Nyanza..."
+              maxLength={600}
+            />
           </div>
         </aside>
       </div>
@@ -529,22 +480,39 @@ export default function PublishEditor({
           </span>
         </label>
 
+        {formError ? (
+          <p
+            role="alert"
+            style={{
+              margin: "0.75rem 0 0",
+              color: "#ffb4a2",
+              fontSize: "0.9rem",
+              fontWeight: 600,
+            }}
+          >
+            {formError}
+          </p>
+        ) : null}
+
         <div className={styles.submitRow}>
           {showDraftButton ? (
             <button
               type="button"
               className={styles.draftBtn}
+              disabled={savingDraft || submitting}
               onClick={handleSaveDraft}
             >
-              Bika nk&apos;inyandiko itaratangazwa
+              {savingDraft
+                ? "Kubika…"
+                : "Bika nk'inyandiko itaratangazwa"}
             </button>
           ) : null}
           <button
             type="submit"
             className={styles.submitBtn}
-            disabled={!isValid}
+            disabled={!isValid || submitting}
           >
-            {submitLabel}
+            {submitting ? "Gutunganya…" : submitLabel}
           </button>
           {draftToast ? (
             <span className={styles.toast} role="status" aria-live="polite">
@@ -552,8 +520,12 @@ export default function PublishEditor({
             </span>
           ) : null}
           {published ? (
-            <span className={styles.statusText} role="status" aria-live="polite">
-              {storySlug && livePostStatus === "published"
+            <span
+              className={styles.statusText}
+              role="status"
+              aria-live="polite"
+            >
+              {isEditingPublished
                 ? "Impinduka zabitswe!"
                 : "Inyandiko yawe yatangajwe!"}
             </span>

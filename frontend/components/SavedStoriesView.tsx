@@ -1,60 +1,60 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import StoryCard, { type StoryItem } from "./StoryCard";
+import StoryCard from "./StoryCard";
+import { apiFetch } from "@/lib/api";
 import {
-  filterVisiblePosts,
-  getPosts,
-  type PostStatus,
-  type StorePost,
-} from "@/lib/store";
-import { getSession } from "@/src/data/session";
+  postToStoryItem,
+  type BookmarksResponse,
+  type PostDto,
+} from "@/lib/api-types";
 import styles from "./SavedStoriesView.module.css";
 
-type StoryRecord = StoryItem & {
-  saved?: boolean;
-  following?: boolean;
-  status?: PostStatus;
-  authorId?: string;
-};
-
 type Props = {
-  stories: StoryRecord[];
+  initialData: BookmarksResponse;
 };
 
 type TabId = "inyandiko" | "abo-ukurikira" | "izitaratangazwa";
 
-export default function SavedStoriesView({ stories }: Props) {
+export default function SavedStoriesView({ initialData }: Props) {
   const [tab, setTab] = useState<TabId>("inyandiko");
-  const [allPosts, setAllPosts] = useState<StoryRecord[]>(stories);
-  const [viewerSlug, setViewerSlug] = useState("kalisa-mugisha");
+  const [data, setData] = useState<BookmarksResponse>(initialData);
 
   useEffect(() => {
-    const stored = getPosts() as StorePost[];
-    setAllPosts(stored);
-    const session = getSession();
-    if (session?.displayName) {
-      setViewerSlug(session.displayName.toLowerCase().replace(/\s+/g, "-"));
-    }
+    let cancelled = false;
+    apiFetch<BookmarksResponse>("/api/v1/bookmarks")
+      .then((res) => {
+        if (!cancelled) setData(res);
+      })
+      .catch(() => {
+        // keep SSR data if transient failure
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  const publicStories = filterVisiblePosts(allPosts);
-  const myDrafts = allPosts.filter((s) => {
-    if (s.status !== "draft") return false;
-    const authorId = s.authorId ?? "";
-    return authorId === viewerSlug || authorId.startsWith(viewerSlug);
-  });
-
-  const visibleStories =
+  const visiblePosts: PostDto[] =
     tab === "inyandiko"
-      ? publicStories.filter((s) => s.saved)
+      ? data.savedPosts
       : tab === "abo-ukurikira"
-        ? publicStories.filter((s) => s.following)
-        : myDrafts;
+        ? data.followingPosts
+        : data.drafts;
+
+  const emptyText =
+    tab === "inyandiko"
+      ? "Nta nyandiko urabika kugeza ubu."
+      : tab === "abo-ukurikira"
+        ? "Nta nkuru z'abo ukurikira ziraboneka."
+        : "Nta nyandiko itaratangazwa ufite.";
 
   return (
     <>
-      <div className={styles.tabs} role="tablist" aria-label="Ibyiciro by'ibyo wabitse">
+      <div
+        className={styles.tabs}
+        role="tablist"
+        aria-label="Ibyiciro by'ibyo wabitse"
+      >
         <button
           type="button"
           role="tab"
@@ -84,42 +84,23 @@ export default function SavedStoriesView({ stories }: Props) {
         </button>
       </div>
 
-      {tab === "izitaratangazwa" && visibleStories.length === 0 ? (
+      {visiblePosts.length === 0 ? (
         <p className={styles.empty} role="tabpanel">
-          Nta nyandiko itaratangazwa ufite.
+          {emptyText}
         </p>
       ) : (
         <div className={styles.grid} role="tabpanel">
-          {visibleStories.map((story) => {
-            if (tab === "izitaratangazwa") {
-              const hasDraftTag = story.tags.some(
-                (t) => t.label === "Itaratangazwa"
-              );
-              const draftStory: StoryItem = {
-                ...story,
-                tags: hasDraftTag
-                  ? story.tags
-                  : [
-                      { label: "Itaratangazwa", tone: "sand" },
-                      ...story.tags,
-                    ],
-              };
-              return (
-                <StoryCard
-                  key={story.id}
-                  story={draftStory}
-                  href={`/inkuru/${story.slug || story.id}/hindura`}
-                />
-              );
-            }
-            return (
-              <StoryCard
-                key={story.id}
-                story={story}
-                href={`/inkuru/${story.slug || story.id}`}
-              />
-            );
-          })}
+          {visiblePosts.map((post) => (
+            <StoryCard
+              key={post.id}
+              story={postToStoryItem(post)}
+              href={
+                tab === "izitaratangazwa"
+                  ? `/inkuru/${post.id}/hindura`
+                  : `/inkuru/${post.slug}`
+              }
+            />
+          ))}
         </div>
       )}
     </>

@@ -17,10 +17,8 @@ export default function AbantuPage() {
       <Header variant="B" />
       <main className={styles.main}>
         <div className={styles.container}>
-          <p className={styles.eyebrow}>KALISA MUGISHA</p>
-          <h1 className={styles.title}>Abantu</h1>
           <Suspense fallback={null}>
-            <PeopleListView />
+            <PeopleListView eyebrowClassName={styles.eyebrow} titleClassName={styles.title} />
           </Suspense>
         </div>
       </main>

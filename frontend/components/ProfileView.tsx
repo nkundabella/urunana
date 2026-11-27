@@ -2,71 +2,74 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import StoryCard, { type StoryItem } from "./StoryCard";
-import { filterVisiblePosts, getPosts, type StorePost } from "@/lib/store";
-import { getSession } from "@/src/data/session";
+import { useRouter } from "next/navigation";
+import StoryCard from "./StoryCard";
+import { ApiError, apiFetch } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
+import { postToStoryItem, type ProfileResponse } from "@/lib/api-types";
 import styles from "./ProfileView.module.css";
 
-export type ProfileData = {
-  id: string;
-  name: string;
-  badge: string;
-  bio: string;
-  interests: string[];
-  followers: number | null;
-  following: number | null;
-};
-
 type Props = {
-  profile: ProfileData;
-  authoredStories: StoryItem[];
-  savedStories: StoryItem[];
+  initialData: ProfileResponse;
 };
 
 type TabId = "inyandiko" | "byabitswe";
 
-export default function ProfileView({
-  profile,
-  authoredStories,
-  savedStories,
-}: Props) {
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [isOwner, setIsOwner] = useState(false);
+export default function ProfileView({ initialData }: Props) {
+  const router = useRouter();
+  const { user: authUser } = useAuth();
+
+  const [data, setData] = useState<ProfileResponse>(initialData);
+  const [isFollowing, setIsFollowing] = useState(initialData.isFollowing);
+  const [followersCount, setFollowersCount] = useState(
+    initialData.stats.followersCount
+  );
+  const [togglingFollow, setTogglingFollow] = useState(false);
   const [tab, setTab] = useState<TabId>("inyandiko");
-  const [liveAuthored, setLiveAuthored] = useState<StoryItem[]>(authoredStories);
-  const [liveSaved, setLiveSaved] = useState<StoryItem[]>(savedStories);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const visible = filterVisiblePosts(getPosts() as StorePost[]);
-    const authored = visible.filter(
-      (s) =>
-        s.authorId === profile.id ||
-        s.author.toLowerCase() === profile.name.toLowerCase()
-    );
-    const saved = visible.filter((s) => s.saved);
-    setLiveAuthored(authored);
-    setLiveSaved(saved);
+    setData(initialData);
+    setIsFollowing(initialData.isFollowing);
+    setFollowersCount(initialData.stats.followersCount);
+  }, [initialData]);
 
-    const session = getSession();
-    const viewerSlug = session?.displayName
-      ? session.displayName.toLowerCase().replace(/\s+/g, "-")
-      : "kalisa-mugisha";
-    const matchesOwner =
-      viewerSlug === profile.id ||
-      profile.id.startsWith(viewerSlug) ||
-      session?.displayName?.toLowerCase() === profile.name.toLowerCase();
-    setIsOwner(matchesOwner);
-  }, [profile.id, profile.name]);
+  const profile = data.user;
+  const isOwner = Boolean(
+    data.isOwner || (authUser && authUser.id === profile.id)
+  );
 
-  const storyCount = liveAuthored.length > 0 ? String(liveAuthored.length) : "0";
-  const followerCount =
-    profile.followers !== null
-      ? String(profile.followers + (isFollowing ? 1 : 0))
-      : "—";
-  const followingCount =
-    profile.following !== null ? String(profile.following) : "—";
+  async function handleToggleFollow() {
+    if (!authUser) {
+      router.push(
+        `/kwinjira?next=${encodeURIComponent(`/umwirondoro/${profile.username}`)}`
+      );
+      return;
+    }
+    if (togglingFollow) return;
+    setTogglingFollow(true);
+    setError(null);
+    try {
+      const res = await apiFetch<{
+        following: boolean;
+        followersCount: number;
+      }>(`/api/v1/users/${profile.id}/follow`, {
+        method: "POST",
+      });
+      setIsFollowing(res.following);
+      setFollowersCount(res.followersCount);
+    } catch (err) {
+      setError(
+        err instanceof ApiError
+          ? err.message
+          : "Ntibyakunze guhindura gukurikira."
+      );
+    } finally {
+      setTogglingFollow(false);
+    }
+  }
 
-  const visibleStories = tab === "inyandiko" ? liveAuthored : liveSaved;
+  const visiblePosts = tab === "inyandiko" ? data.posts : data.savedPosts;
 
   return (
     <div className={styles.container}>
@@ -74,11 +77,14 @@ export default function ProfileView({
         <div className={styles.identityLeft}>
           <div className={styles.avatar}>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/assets/blue-baskets.jpg" alt={profile.name} />
+            <img
+              src={profile.profilePhotoUrl || "/assets/blue-baskets.jpg"}
+              alt={profile.displayName}
+            />
           </div>
 
           <div className={styles.nameBlock}>
-            <h1 className={styles.name}>{profile.name}</h1>
+            <h1 className={styles.name}>{profile.displayName}</h1>
             <span className={styles.badge}>{profile.badge}</span>
           </div>
         </div>
@@ -92,39 +98,54 @@ export default function ProfileView({
             type="button"
             className={`${styles.followBtn}${isFollowing ? ` ${styles.followingBtn}` : ""}`}
             aria-pressed={isFollowing}
-            onClick={() => setIsFollowing((prev) => !prev)}
+            disabled={togglingFollow}
+            onClick={handleToggleFollow}
           >
             {isFollowing ? "Uramukurikira" : "Kurikira"}
           </button>
         )}
       </div>
 
-      <p className={styles.bio}>{profile.bio}</p>
+      {error ? (
+        <p role="alert" style={{ color: "var(--red)", marginTop: "0.75rem" }}>
+          {error}
+        </p>
+      ) : null}
 
-      <div className={styles.interests}>
-        {profile.interests.map((interest) => (
-          <span key={interest} className={styles.interestChip}>
-            {interest}
-          </span>
-        ))}
-      </div>
+      {profile.bio ? <p className={styles.bio}>{profile.bio}</p> : null}
+
+      {profile.areasOfInterest.length > 0 ? (
+        <div className={styles.interests}>
+          {profile.areasOfInterest.map((interest) => (
+            <span key={interest} className={styles.interestChip}>
+              {interest}
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       <hr className={styles.divider} />
 
       <div className={styles.stats}>
         <div className={styles.stat}>
-          <span className={styles.statValue}>{storyCount}</span>
+          <span className={styles.statValue}>{data.stats.postsCount}</span>
           <span className={styles.statLabel}>Inyandiko</span>
         </div>
-        <Link href="/abantu?tab=abagukurikira" className={styles.statLink}>
+        <Link
+          href={`/abantu?user=${encodeURIComponent(profile.username)}&tab=abagukurikira`}
+          className={styles.statLink}
+        >
           <div className={styles.stat}>
-            <span className={styles.statValue}>{followerCount}</span>
+            <span className={styles.statValue}>{followersCount}</span>
             <span className={styles.statLabel}>Abagukurikira</span>
           </div>
         </Link>
-        <Link href="/abantu?tab=abo-ukurikira" className={styles.statLink}>
+        <Link
+          href={`/abantu?user=${encodeURIComponent(profile.username)}&tab=abo-ukurikira`}
+          className={styles.statLink}
+        >
           <div className={styles.stat}>
-            <span className={styles.statValue}>{followingCount}</span>
+            <span className={styles.statValue}>{data.stats.followingCount}</span>
             <span className={styles.statLabel}>Abo ukurikira</span>
           </div>
         </Link>
@@ -132,7 +153,11 @@ export default function ProfileView({
 
       <hr className={styles.divider} />
 
-      <div className={styles.tabs} role="tablist" aria-label="Ibyiciro by'umwirondoro">
+      <div
+        className={styles.tabs}
+        role="tablist"
+        aria-label="Ibyiciro by'umwirondoro"
+      >
         <button
           type="button"
           role="tab"
@@ -142,26 +167,36 @@ export default function ProfileView({
         >
           Inyandiko
         </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={tab === "byabitswe"}
-          className={`${styles.tab}${tab === "byabitswe" ? ` ${styles.tabActive}` : ""}`}
-          onClick={() => setTab("byabitswe")}
-        >
-          Byabitswe
-        </button>
+        {isOwner ? (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={tab === "byabitswe"}
+            className={`${styles.tab}${tab === "byabitswe" ? ` ${styles.tabActive}` : ""}`}
+            onClick={() => setTab("byabitswe")}
+          >
+            Byabitswe
+          </button>
+        ) : null}
       </div>
 
-      <div className={styles.grid} role="tabpanel">
-        {visibleStories.map((story) => (
-          <StoryCard
-            key={story.id}
-            story={story}
-            href={`/inkuru/${story.slug || story.id}`}
-          />
-        ))}
-      </div>
+      {visiblePosts.length === 0 ? (
+        <p className={styles.bio} role="tabpanel">
+          {tab === "inyandiko"
+            ? "Nta nyandiko iratangazwa kugeza ubu."
+            : "Nta nyandiko urabika kugeza ubu."}
+        </p>
+      ) : (
+        <div className={styles.grid} role="tabpanel">
+          {visiblePosts.map((post) => (
+            <StoryCard
+              key={post.id}
+              story={postToStoryItem(post)}
+              href={`/inkuru/${post.slug}`}
+            />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
