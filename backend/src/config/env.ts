@@ -18,6 +18,7 @@ const envSchema = z.object({
   CORS_ORIGIN: z.string().default("http://localhost:3000"),
   UPLOAD_DIR: z.string().default("./uploads"),
   NEXT_PUBLIC_SITE_URL: z.string().default("http://localhost:3000"),
+  COOKIE_SECURE: z.enum(["true", "false"]).optional(),
 });
 
 const parsed = envSchema.safeParse(process.env);
@@ -30,7 +31,14 @@ if (!parsed.success) {
   process.exit(1);
 }
 
+const isCookieSecure =
+  parsed.data.COOKIE_SECURE !== undefined
+    ? parsed.data.COOKIE_SECURE === "true"
+    : parsed.data.NODE_ENV === "production" &&
+      parsed.data.NEXT_PUBLIC_SITE_URL.startsWith("https://");
+
 export const env = {
   ...parsed.data,
   UPLOAD_DIR_ABS: path.resolve(process.cwd(), parsed.data.UPLOAD_DIR),
+  IS_COOKIE_SECURE: isCookieSecure,
 };

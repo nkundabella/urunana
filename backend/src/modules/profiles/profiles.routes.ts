@@ -157,7 +157,7 @@ export async function profilesRoutes(app: FastifyInstance) {
         sameSite: "lax",
         path: "/",
         maxAge: SESSION_MAX_AGE_SECONDS,
-        secure: env.NODE_ENV === "production",
+        secure: env.IS_COOKIE_SECURE,
       });
 
       return reply.code(200).send({ user: updated });
