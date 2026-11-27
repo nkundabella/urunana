@@ -1,11 +1,27 @@
 import type { NextConfig } from "next";
 
-// Next.js 16 uses Turbopack by default and can process Tailwind CSS via PostCSS.
-// No custom Turbopack loader is needed because we have @tailwindcss/postcss installed.
-// The configuration is left empty to rely on the defaults.
+const backendOrigin = (
+  process.env.INTERNAL_API_URL || "http://localhost:4000"
+).replace(/\/$/, "");
+
 const nextConfig: NextConfig = {
   devIndicators: false,
+  output: "standalone",
+  images: {
+    unoptimized: true,
+  },
+  async rewrites() {
+    return [
+      {
+        source: "/api/v1/:path*",
+        destination: `${backendOrigin}/api/v1/:path*`,
+      },
+      {
+        source: "/uploads/:path*",
+        destination: `${backendOrigin}/uploads/:path*`,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
-

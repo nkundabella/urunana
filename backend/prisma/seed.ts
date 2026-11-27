@@ -1,3 +1,4 @@
+import path from "node:path";
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
 import {
@@ -8,11 +9,12 @@ import {
   KnowledgeSourceType,
   ContentLanguage,
   PublicationStatus,
-} from "../generated/prisma/client";
+} from "../src/generated/prisma/client.js";
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
 
-dotenv.config();
+dotenv.config({ path: path.resolve(process.cwd(), "../.env") });
+dotenv.config({ path: path.resolve(process.cwd(), ".env") });
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
